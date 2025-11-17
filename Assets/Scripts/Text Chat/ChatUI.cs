@@ -4,15 +4,16 @@ using UnityEngine.UI;
 using Unity.Services.Authentication;
 using System.Collections.Generic;
 using System.Collections;
+using Unity.Services.Vivox;
 
 public class ChatUI : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private TMP_InputField chatInputField;
     [SerializeField] private Button sendButton;
-    [SerializeField] private Transform chatContentContainer; // El Content del Scroll View
-    [SerializeField] private GameObject chatMessagePrefab; // Prefab para cada mensaje
-    [SerializeField] private ScrollRect chatScrollRect; // Para el auto-scroll
+    [SerializeField] private Transform chatContentContainer;
+    [SerializeField] private GameObject chatMessagePrefab;
+    [SerializeField] private ScrollRect chatScrollRect;
 
     private List<GameObject> _spawnedChatMessages = new List<GameObject>();
     private string _currentPlayerId;
@@ -24,32 +25,25 @@ public class ChatUI : MonoBehaviour
 
     void OnEnable()
     {
-        ChatManager.OnNewMessage += DisplayNewMessage;
+        VivoxManager.OnMessageReceivedUI += DisplayNewMessage;
+
         LobbyManager.OnLobbyJoinedOrLeft += OnLobbyStateChanged;
-        if (sendButton != null)
-        {
-            sendButton.onClick.AddListener(OnSendButtonClicked);
-        }
-        if (chatInputField != null)
-        {
-            chatInputField.onSubmit.AddListener(OnInputSubmit); 
-        }
+
+        if (sendButton != null) sendButton.onClick.AddListener(OnSendButtonClicked);
+        if (chatInputField != null) chatInputField.onSubmit.AddListener(OnInputSubmit);
     }
 
     void OnDisable()
     {
-        ChatManager.OnNewMessage -= DisplayNewMessage;
+        VivoxManager.OnMessageReceivedUI -= DisplayNewMessage;
+
         LobbyManager.OnLobbyJoinedOrLeft -= OnLobbyStateChanged;
         ClearChatMessages();
-        if (sendButton != null)
-        {
-            sendButton.onClick.RemoveListener(OnSendButtonClicked);
-        }
-        if (chatInputField != null)
-        {
-            chatInputField.onSubmit.RemoveListener(OnInputSubmit);
-        }
+
+        if (sendButton != null) sendButton.onClick.RemoveListener(OnSendButtonClicked);
+        if (chatInputField != null) chatInputField.onSubmit.RemoveListener(OnInputSubmit);
     }
+
     private void OnLobbyStateChanged()
     {
         if (LobbyManager.Instance.JoinedLobby == null)
@@ -57,6 +51,7 @@ public class ChatUI : MonoBehaviour
             ClearChatMessages();
         }
     }
+
     private void OnSendButtonClicked()
     {
         SendMessageFromInput();
@@ -65,7 +60,7 @@ public class ChatUI : MonoBehaviour
     private void OnInputSubmit(string input)
     {
         SendMessageFromInput();
-        chatInputField.ActivateInputField(); 
+        chatInputField.ActivateInputField();
     }
 
     private async void SendMessageFromInput()
@@ -74,16 +69,55 @@ public class ChatUI : MonoBehaviour
         if (string.IsNullOrWhiteSpace(message)) return;
 
         chatInputField.text = "";
-        await ChatManager.Instance.ProcessAndSendMessage(message);
+
+        if (message.StartsWith("/sendto "))
+        {
+            string command = message.Substring("/sendto ".Length);
+            int firstQuote = command.IndexOf('"');
+            int secondQuote = command.IndexOf('"', firstQuote + 1);
+
+            if (firstQuote != -1 && secondQuote != -1)
+            {
+                string targetName = command.Substring(firstQuote + 1, secondQuote - firstQuote - 1);
+                string messageContent = command.Substring(secondQuote + 1).Trim();
+
+                if (string.IsNullOrWhiteSpace(messageContent)) return;
+
+                Debug.Log($"Enviando mensaje privado a {targetName}: {messageContent}");
+                await VivoxManager.Instance.SendDirectMessage(messageContent, targetName);
+            }
+            else
+            {
+                Debug.LogWarning("Formato de mensaje privado incorrecto.");
+            }
+        }
+        else
+        {
+            await VivoxManager.Instance.SendMessageToChannel(message, VivoxManager.Instance.CurrentTextChannel);
+        }
     }
 
     private void DisplayNewMessage(ChatMessage message)
     {
-        string formattedMessage = message.GetFormattedMessage(_currentPlayerId);
-        if (string.IsNullOrEmpty(formattedMessage))
+        string localPlayerName = PlayerAccountManager.Instance.PlayerName;
+        string formattedMessage;
+
+        if (message.IsDirectMessage)
         {
-            return; // No muestres este mensaje (es privado para otra persona)
+            if (message.SenderDisplayName == localPlayerName)
+            {
+                formattedMessage = $"[Private to {message.RecipientDisplayName}]: {message.MessageText}";
+            }
+            else 
+            {
+                formattedMessage = $"[Private from {message.SenderDisplayName}]: {message.MessageText}";
+            }
         }
+        else 
+        {
+            formattedMessage = $"[All] {message.SenderDisplayName}: {message.MessageText}";
+        }
+
 
         GameObject messageGO = Instantiate(chatMessagePrefab, chatContentContainer);
         TextMeshProUGUI messageText = messageGO.GetComponent<TextMeshProUGUI>();
@@ -93,15 +127,15 @@ public class ChatUI : MonoBehaviour
         }
         _spawnedChatMessages.Add(messageGO);
 
-        if (_spawnedChatMessages.Count > 50) // Límite de mensajes
+        if (_spawnedChatMessages.Count > 100)
         {
             Destroy(_spawnedChatMessages[0]);
             _spawnedChatMessages.RemoveAt(0);
         }
 
-        // Forzar el scroll hacia abajo
         StartCoroutine(ForceScrollDown());
     }
+
     private IEnumerator ForceScrollDown()
     {
         yield return new WaitForEndOfFrame();
@@ -111,6 +145,7 @@ public class ChatUI : MonoBehaviour
             chatScrollRect.verticalNormalizedPosition = 0f;
         }
     }
+
     private void ClearChatMessages()
     {
         foreach (GameObject msg in _spawnedChatMessages)

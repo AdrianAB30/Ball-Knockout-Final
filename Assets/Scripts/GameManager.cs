@@ -14,6 +14,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject mainMenuCanvas;
     [SerializeField] private GameObject panelChangeName;
     [SerializeField] private GameObject lobbyPanel;
+    [SerializeField] private GameObject settingsPanel;
     [SerializeField] private GameObject buttonsMenu;
     [SerializeField] private GameObject loginButtonsPanel;
     [SerializeField] private GameObject createLobbyGroup;
@@ -172,6 +173,10 @@ public class GameManager : MonoBehaviour
         {
             buttonsMenu.SetActive(true);
         }
+    }
+    public void ToggleSettingsPanel()
+    {
+        settingsPanel.SetActive(!settingsPanel.activeSelf);
     }
     public void ToggleCreateLobbyGroup()
     {

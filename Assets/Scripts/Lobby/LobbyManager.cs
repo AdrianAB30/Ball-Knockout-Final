@@ -15,10 +15,7 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
     private const string KEY_RELAY_CODE = "RelayJoinCode";
     public const string KEY_PLAYER_READY = "PlayerReady";
     public const string KEY_PLAYER_NAME = "PlayerName";
-    public const string KEY_CHAT_MESSAGE = "ChatMessage";
 
-    // --- Cach� de Mensajes ---
-    private Dictionary<string, string> _lastPlayerChatMessages = new Dictionary<string, string>();
 
     // --- Propiedades P�blicas ---
     public Lobby HostLobby { get; private set; }
@@ -30,7 +27,6 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
     public static event Action<List<Lobby>> OnLobbyListChanged;
     public static event Action OnLobbyJoinedOrLeft;
     public static event Action<Lobby> OnLobbyUpdated;
-    public static event Action<ChatMessage> OnChatMessageReceived;
 
     // --- Eventos de Fallo ---
     public static event Action OnCreateLobbyFailed;
@@ -121,38 +117,12 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
         catch (Exception e) { Debug.LogError($"Error subscribing to lobby events: {e}"); }
     }
 
-    // --- �M�TODO OnLobbyChanged CORREGIDO! ---
-    // Esta es la versi�n que compila Y arregla el bug de sincronizaci�n.
     private void OnLobbyChanged(ILobbyChanges lobbyChange)
     {
         if (JoinedLobby == null) return;
-
-        // 1. APLICA los cambios al lobby PRIMERO.
         lobbyChange.ApplyToLobby(JoinedLobby);
-
-        // 2. AHORA, revisa los datos de chat actualizados en 'JoinedLobby'
-        foreach (var player in JoinedLobby.Players)
-        {
-            if (player.Data != null && player.Data.TryGetValue(KEY_CHAT_MESSAGE, out PlayerDataObject chatData))
-            {
-                string messageJson = chatData.Value;
-                _lastPlayerChatMessages.TryGetValue(player.Id, out string lastMessageJson);
-
-                if (!string.IsNullOrEmpty(messageJson) && messageJson != lastMessageJson)
-                {
-                    _lastPlayerChatMessages[player.Id] = messageJson; // Actualiza el cach�
-                    try
-                    {
-                        ChatMessage receivedMessage = JsonUtility.FromJson<ChatMessage>(messageJson);
-                        OnChatMessageReceived?.Invoke(receivedMessage);
-                    }
-                    catch (Exception e) { Debug.LogError($"Error deserializando chat: {e}"); }
-                }
-            }
-        }
-
-        Debug.Log("Lobby actualizado v�a Evento.");
-        OnLobbyUpdated?.Invoke(JoinedLobby); // Refresca la UI
+        Debug.Log("Lobby actualizado vía Evento.");
+        OnLobbyUpdated?.Invoke(JoinedLobby); 
     }
 
     private void OnKickedFromLobby()
@@ -162,7 +132,6 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
         OnLobbyJoinedOrLeft?.Invoke();
     }
 
-    // --- L�gica de Datos ---
 
     private Player GetNewPlayerData()
     {
@@ -174,7 +143,6 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
             { KEY_PLAYER_READY, new PlayerDataObject(
                 visibility: PlayerDataObject.VisibilityOptions.Member,
                 value: "false") }
-            // No se a�ade KEY_CHAT_MESSAGE aqu�
         };
         return new Player { Data = playerData };
     }
@@ -186,7 +154,6 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
         HostLobby = null;
         CurrentRelayIP = null;
         CurrentRelayCode = null;
-        _lastPlayerChatMessages.Clear(); // <-- �Limpia el cach� de chat!
     }
 
     // --- M�todos Privados (Llamados por Eventos de UI) ---
@@ -200,7 +167,6 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
 
             CurrentRelayIP = _relayManager.RelayIpV4;
             CurrentRelayCode = _relayManager.RelayJoinCode;
-            _lastPlayerChatMessages.Clear(); // Limpia el cach� al crear
 
             CreateLobbyOptions options = new CreateLobbyOptions
             {
@@ -267,12 +233,11 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
 
             CurrentRelayIP = _relayManager.RelayIpV4;
             CurrentRelayCode = _relayManager.RelayJoinCode;
-            _lastPlayerChatMessages.Clear(); // Limpia el cach� al unirse
 
             await SubscribeToLobbyEvents(JoinedLobby);
             Debug.Log("Unido al Lobby. Logueando en Vivox y Uniendo a canales...");
 
-            await VivoxManager.Instance.LoginVivox(); // LoginVivox() ya comprueba si está logueado
+            await VivoxManager.Instance.LoginVivox(); 
             await VivoxManager.Instance.JoinTextChannel(JoinedLobby.Id);
             await VivoxManager.Instance.JoinVoiceChannel(JoinedLobby.Id);
 
@@ -297,13 +262,12 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
 
             CurrentRelayIP = _relayManager.RelayIpV4;
             CurrentRelayCode = _relayManager.RelayJoinCode;
-            _lastPlayerChatMessages.Clear();
 
             await SubscribeToLobbyEvents(JoinedLobby);
 
             Debug.Log("Unido al Lobby. Logueando en Vivox y Uniendo a canales...");
 
-            await VivoxManager.Instance.LoginVivox(); // LoginVivox() ya comprueba si está logueado
+            await VivoxManager.Instance.LoginVivox(); 
             await VivoxManager.Instance.JoinTextChannel(JoinedLobby.Id);
             await VivoxManager.Instance.JoinVoiceChannel(JoinedLobby.Id);
 
@@ -328,13 +292,12 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
 
             CurrentRelayIP = _relayManager.RelayIpV4;
             CurrentRelayCode = _relayManager.RelayJoinCode;
-            _lastPlayerChatMessages.Clear();
 
             await SubscribeToLobbyEvents(JoinedLobby);
 
             Debug.Log("Unido al Lobby. Logueando en Vivox y Uniendo a canales...");
 
-            await VivoxManager.Instance.LoginVivox(); // LoginVivox() ya comprueba si está logueado
+            await VivoxManager.Instance.LoginVivox(); 
             await VivoxManager.Instance.JoinTextChannel(JoinedLobby.Id);
             await VivoxManager.Instance.JoinVoiceChannel(JoinedLobby.Id);
             OnLobbyJoinedOrLeft?.Invoke();
@@ -346,103 +309,30 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
         }
     }
 
-    // --- �M�TODO DE ACTUALIZACI�N UNIFICADO! (SOLUCI�N AL BUG DE SINCRONIZACI�N) ---
-
-    /// <summary>
-    /// Actualiza los datos de un jugador (Ready o Chat) enviando SIEMPRE
-    /// el estado completo para evitar que los datos se sobrescriban.
-    /// </summary>
-    private async Task UpdatePlayerDataAsync(ChatMessage chatMessage = null, bool? isReady = null)
+    private async void UpdatePlayerReady(bool isReady)
     {
         if (JoinedLobby == null) return;
-
-        string playerId = AuthenticationService.Instance.PlayerId;
-        var currentPlayer = JoinedLobby.Players.Find(p => p.Id == playerId);
-        if (currentPlayer == null) return; // No estamos en el lobby
-
         try
         {
-            var playerData = new Dictionary<string, PlayerDataObject>();
-
-            // 1. A�adir Nombre (siempre debe estar)
-            // (Asegurarse de que el nombre exista en los datos)
-            if (currentPlayer.Data.TryGetValue(KEY_PLAYER_NAME, out var nameData))
-            {
-                playerData[KEY_PLAYER_NAME] = nameData;
-            }
-            else
-            {
-                // Si no existe, t�malo del PlayerAccountManager (deber�a existir desde GetNewPlayerData)
-                playerData[KEY_PLAYER_NAME] = new PlayerDataObject(
-                    PlayerDataObject.VisibilityOptions.Member,
-                    PlayerAccountManager.Instance.PlayerName);
-            }
-
-
-            // 2. Determinar y a�adir estado 'Ready'
-            bool currentReadyState = false;
-            if (currentPlayer.Data.TryGetValue(KEY_PLAYER_READY, out var readyData))
-            {
-                bool.TryParse(readyData.Value, out currentReadyState);
-            }
-            playerData[KEY_PLAYER_READY] = new PlayerDataObject(
+            Dictionary<string, PlayerDataObject> playerData = new Dictionary<string, PlayerDataObject>
+        {
+            { KEY_PLAYER_READY, new PlayerDataObject(
                 visibility: PlayerDataObject.VisibilityOptions.Member,
-                value: (isReady ?? currentReadyState).ToString()
-            );
-
-            // 3. Determinar y a�adir mensaje de Chat
-            string messageJson = "";
-            if (chatMessage != null)
-            {
-                // Estamos enviando un mensaje nuevo
-                messageJson = JsonUtility.ToJson(chatMessage);
-            }
-            else
-            {
-                // No estamos enviando un chat, as� que reenviamos el �ltimo mensaje
-                _lastPlayerChatMessages.TryGetValue(playerId, out messageJson);
-            }
-            playerData[KEY_CHAT_MESSAGE] = new PlayerDataObject(
-                visibility: PlayerDataObject.VisibilityOptions.Member,
-                value: messageJson ?? "" // Asegurarse de no enviar nulo
-            );
-
-            // 4. Enviar la actualizaci�n COMPLETA
+                value: isReady.ToString()) }
+        };
+            string playerId = AuthenticationService.Instance.PlayerId;
             await LobbyService.Instance.UpdatePlayerAsync(
                 JoinedLobby.Id,
                 playerId,
                 new UpdatePlayerOptions { Data = playerData }
             );
-
-            // 5. Si enviamos un chat, actualiza el cach� local inmediatamente
-            if (chatMessage != null)
-            {
-                _lastPlayerChatMessages[playerId] = messageJson;
-                // No disparamos OnChatMessageReceived aqu�, OnLobbyChanged lo har�
-            }
         }
         catch (LobbyServiceException e)
         {
-            Debug.LogError($"Failed to update player data: {e}");
-            if (isReady != null) OnReadyToggleFailed?.Invoke();
-            // (Podr�amos a�adir un OnChatSendFailed?.Invoke() aqu� tambi�n)
+            Debug.LogError($"Failed to update player ready state: {e}");
+            OnReadyToggleFailed?.Invoke();
         }
     }
-
-    // --- M�todos que llaman al actualizador unificado ---
-
-    private async void UpdatePlayerReady(bool isReady)
-    {
-        await UpdatePlayerDataAsync(null, isReady);
-    }
-
-    // �Este m�todo DEBE ser p�blico para que ChatManager lo llame!
-    public async Task SendChatMessage(ChatMessage message)
-    {
-        await UpdatePlayerDataAsync(message, null);
-    }
-
-    // ---
 
     private async void LeaveLobby()
     {
@@ -534,10 +424,6 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
                 playerId,
                 new UpdatePlayerOptions { Data = playerData }
             );
-
-            // �No necesitas llamar a OnLobbyUpdated aqu�!
-            // El servidor disparar� el evento OnLobbyChanged para todos 
-            // autom�ticamente, lo que refrescar� la UI.
         }
         catch (LobbyServiceException e)
         {

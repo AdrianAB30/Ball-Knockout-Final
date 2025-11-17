@@ -17,15 +17,18 @@ public class AnonymousAuthService : BaseAuthService
         }
         try
         {
+            isActiveAuthSource = true; 
+
             if (AuthenticationService.Instance.IsSignedIn)
             {
                 Debug.Log($"[{ServiceType}] Player is already signed in");
-                isActiveAuthSource = true; 
                 HandleSignedIn();
+                isActiveAuthSource = false; 
                 return;
             }
-            isActiveAuthSource = true;
+
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
+
         }
         catch (System.Exception ex)
         {

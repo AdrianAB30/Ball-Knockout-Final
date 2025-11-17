@@ -5,14 +5,70 @@ using Unity.Services.Authentication;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Services.Core; 
+using Unity.Services.Lobbies.Models;
 
 public class VivoxManager : PersistentSingleton<VivoxManager>
 {
+    public static event Action<ChatMessage> OnMessageReceivedUI;
+
     public bool IsMuted { get; private set; }
     public string CurrentVoiceChannel { get; private set; }
     public string CurrentTextChannel { get; private set; }
 
+    private async void Start()
+    {
+        await Task.Yield();
+        if (LobbyManager.Instance == null || PlayerAccountManager.Instance == null)
+        {
+            Debug.LogError("VivoxManager necesita que LobbyManager y PlayerAccountManager existan primero.");
+            return;
+        }
 
+        LobbyManager.OnLobbyJoinedOrLeft += OnLobbyStateChanged;
+
+        if (UnityServices.State != ServicesInitializationState.Initialized)
+        {
+            await UnityServices.InitializeAsync();
+        }
+
+        if (!AuthenticationService.Instance.IsSignedIn)
+        {
+            await AuthenticationService.Instance.SignInAnonymouslyAsync();
+        }
+
+        await LoginVivox();
+
+        ShowInputDevices();
+        ShowOutputDevices();
+    }
+    protected virtual void OnDestroy()
+    {
+        LobbyManager.OnLobbyJoinedOrLeft -= OnLobbyStateChanged;
+
+        _ = LeaveAllChannelsAsync();
+    }
+    private async void OnLobbyStateChanged()
+    {
+        Lobby currentLobby = LobbyManager.Instance.JoinedLobby;
+
+        if (currentLobby == null)
+        {
+            Debug.Log("Vivox: Saliendo de todos los canales...");
+            await LeaveAllChannelsAsync();
+            return;
+        }
+        string channelName = currentLobby.Id;
+
+        if (channelName != CurrentVoiceChannel)
+        {
+            Debug.Log($"Vivox: Uniéndose a los canales del lobby: {channelName}");
+            await LeaveAllChannelsAsync(); 
+
+            await JoinVoiceChannel(channelName);
+            await JoinTextChannel(channelName);
+        }
+    }
     public async Task LoginVivox()
     {
         if (VivoxService.Instance.IsLoggedIn)
@@ -20,15 +76,13 @@ public class VivoxManager : PersistentSingleton<VivoxManager>
             Debug.Log("Vivox ya está logueado.");
             return;
         }
-
         try
         {
-            string nickName = await AuthenticationService.Instance.GetPlayerNameAsync();
+            string nickName = PlayerAccountManager.Instance.PlayerName;
             LoginOptions loginOptions = new LoginOptions { DisplayName = nickName };
 
             await VivoxService.Instance.LoginAsync(loginOptions);
 
-            //->Suscripción a Eventos
             VivoxService.Instance.LoggedIn += OnLoggin;
             VivoxService.Instance.LoggedOut += OnLoggOut;
             VivoxService.Instance.ChannelJoined += OnChannelJoin;
@@ -42,8 +96,6 @@ public class VivoxManager : PersistentSingleton<VivoxManager>
             Debug.LogError("Error al loguear en Vivox:");
             Debug.LogException(ex);
         }
-
-
     }
     public async Task JoinTextChannel(string textChannelName = "CH1")
     {
@@ -69,8 +121,8 @@ public class VivoxManager : PersistentSingleton<VivoxManager>
             Channel3DProperties properties = new Channel3DProperties();
             await VivoxService.Instance.JoinPositionalChannelAsync(textChannelName, ChatCapability.AudioOnly, properties);
             Debug.Log("Te uniste al canal de VOZ: " + textChannelName);
-            //await VivoxService.Instance.JoinGroupChannelAsync(textChannelName, ChatCapability.AudioOnly);
-           // await VivoxService.Instance.JoinEchoChannelAsync(textChannelName, ChatCapability.AudioOnly);
+            await VivoxService.Instance.JoinGroupChannelAsync(textChannelName, ChatCapability.AudioOnly);
+            await VivoxService.Instance.JoinEchoChannelAsync(textChannelName, ChatCapability.AudioOnly);
 
             Debug.Log("Te uniste al canal : " + textChannelName);
         }
@@ -157,27 +209,34 @@ public class VivoxManager : PersistentSingleton<VivoxManager>
        
     }
 
-
     private void OnDirectMessageRecived(VivoxMessage message)
     {
-        var channelName = message.ChannelName;
-        var senderName = message.SenderDisplayName;
-        var senderId = message.SenderPlayerId;
-        var messageText = message.MessageText;
-        var timeRecived = message.ReceivedTime;
+        var chatMessage = new ChatMessage
+        {
+            SenderDisplayName = message.SenderDisplayName,
+            SenderPlayerId = message.SenderPlayerId,
+            ChannelName = message.ChannelName,
+            MessageText = message.MessageText,
+            IsDirectMessage = true,
+            RecipientDisplayName = message.RecipientPlayerId,
+        };
 
-        print("Ch: " + channelName + " T:" + timeRecived + "| " + messageText);
+        OnMessageReceivedUI?.Invoke(chatMessage);
     }
 
     private void OnMessageRecived(VivoxMessage message)
     {
-        var channelName = message.ChannelName;
-        var senderName = message.SenderDisplayName;
-        var senderId =  message.SenderPlayerId;
-        var messageText = message.MessageText;
-        var timeRecived = message.ReceivedTime;
+        var chatMessage = new ChatMessage
+        {
+            SenderDisplayName = message.SenderDisplayName,
+            SenderPlayerId = message.SenderPlayerId,
+            ChannelName = message.ChannelName,
+            MessageText = message.MessageText,
+            IsDirectMessage = false,
+            RecipientDisplayName = null
+        };
 
-        print(senderName + "->  Ch: " + channelName + " T:" + timeRecived + "| " + messageText);
+        OnMessageReceivedUI?.Invoke(chatMessage);
     }
 
     private void OnChannelJoin(string channelName)
@@ -206,7 +265,7 @@ public class VivoxManager : PersistentSingleton<VivoxManager>
         VivoxService.Instance.SetOutputDeviceVolume(volumeDb);
     }
 
-    public void SetParticipantVolume(string channelID, string username , int volume = 15)// -50  +50
+    public void SetParticipantVolume(string channelID, string username , int volume = 15)
     {
         VivoxParticipant participant = 
             VivoxService.Instance.ActiveChannels.FirstOrDefault(x => x.Key.Equals(channelID))
@@ -249,12 +308,6 @@ public class VivoxManager : PersistentSingleton<VivoxManager>
 
     }
 
-
-    // --- MÉTODOS NUEVOS PARA UI Y LOBBY ---
-
-    /// <summary>
-    /// Silencia o desilencia el micrófono propio.
-    /// </summary>
     public void ToggleMute()
     {
         if (!VivoxService.Instance.IsLoggedIn) return;
@@ -263,9 +316,6 @@ public class VivoxManager : PersistentSingleton<VivoxManager>
         Debug.Log(IsMuted ? "Micrófono MUTEADO" : "Micrófono ACTIVADO");
     }
 
-    /// <summary>
-    /// Sale de todos los canales de Vivox (texto y voz).
-    /// </summary>
     public async Task LeaveAllChannelsAsync()
     {
         if (!VivoxService.Instance.IsLoggedIn) return;
@@ -293,18 +343,12 @@ public class VivoxManager : PersistentSingleton<VivoxManager>
         }
     }
 
-    /// <summary>
-    /// Establece el volumen de un jugador específico en el canal de voz actual.
-    /// </summary>
-    /// <param name="unityPlayerId">El ID de jugador de Unity (AuthenticationService.Instance.PlayerId)</param>
-    /// <param name="volumeDb">Volumen en dB. -50 es mute, 0 es normal, +50 es max.</param>
     public void SetParticipantVolume(string unityPlayerId, int volumeDb)
     {
         if (string.IsNullOrEmpty(CurrentVoiceChannel) || !VivoxService.Instance.IsLoggedIn) return;
 
         try
         {
-            // Busca el canal de voz activo
             var channel = VivoxService.Instance.ActiveChannels.FirstOrDefault(c => c.Key == CurrentVoiceChannel).Value;
             if (channel == null)
             {
@@ -312,7 +356,6 @@ public class VivoxManager : PersistentSingleton<VivoxManager>
                 return;
             }
 
-            // Busca al participante por su Unity Player ID
             var participant = channel.FirstOrDefault(p => p.PlayerId == unityPlayerId);
             if (participant != null)
             {

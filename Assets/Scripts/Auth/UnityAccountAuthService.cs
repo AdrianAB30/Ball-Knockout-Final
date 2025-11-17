@@ -53,13 +53,19 @@ public class UnityAccountAuthService : BaseAuthService
     {
         try
         {
+            if (AuthenticationService.Instance.IsSignedIn)
+            {
+                Debug.Log($"[{ServiceType}] UGS is already signed in. Triggering success event.");
+                HandleSignedIn();
+                return;
+            }
             string accessToken = PlayerAccountService.Instance.AccessToken;
             await AuthenticationService.Instance.SignInWithUnityAsync(accessToken);
         }
         catch (System.Exception ex)
         {
             Debug.LogError($"[{ServiceType}] Sign in with Unity failed: {ex.Message}");
-            isActiveAuthSource = false; 
+            isActiveAuthSource = false;
             OnSignInFailed?.Invoke(ex);
         }
     }
