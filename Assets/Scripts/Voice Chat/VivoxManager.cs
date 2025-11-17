@@ -8,29 +8,30 @@ using System.Linq;
 
 public class VivoxManager : PersistentSingleton<VivoxManager>
 {
-    
-    void Start()
-    {
-        
-    }
+    public bool IsMuted { get; private set; }
+    public string CurrentVoiceChannel { get; private set; }
+    public string CurrentTextChannel { get; private set; }
+
 
     public async Task LoginVivox()
     {
+        if (VivoxService.Instance.IsLoggedIn)
+        {
+            Debug.Log("Vivox ya está logueado.");
+            return;
+        }
+
         try
         {
             string nickName = await AuthenticationService.Instance.GetPlayerNameAsync();
-
-            LoginOptions loginOptions = new LoginOptions();
-
-            loginOptions.DisplayName = nickName;
+            LoginOptions loginOptions = new LoginOptions { DisplayName = nickName };
 
             await VivoxService.Instance.LoginAsync(loginOptions);
-            //->Eventos
+
+            //->Suscripción a Eventos
             VivoxService.Instance.LoggedIn += OnLoggin;
             VivoxService.Instance.LoggedOut += OnLoggOut;
-
             VivoxService.Instance.ChannelJoined += OnChannelJoin;
-
             VivoxService.Instance.ChannelMessageReceived += OnMessageRecived;
             VivoxService.Instance.DirectedMessageReceived += OnDirectMessageRecived;
 
@@ -38,6 +39,7 @@ public class VivoxManager : PersistentSingleton<VivoxManager>
         }
         catch (Exception ex)
         {
+            Debug.LogError("Error al loguear en Vivox:");
             Debug.LogException(ex);
         }
 
@@ -48,23 +50,26 @@ public class VivoxManager : PersistentSingleton<VivoxManager>
         if (!VivoxService.Instance.IsLoggedIn) return;
         try
         {
+            CurrentTextChannel = textChannelName;
             await VivoxService.Instance.JoinGroupChannelAsync(textChannelName, ChatCapability.TextOnly);
-
-            Debug.Log("Te uniste al canal : " + textChannelName);
+            Debug.Log("Te uniste al canal de TEXTO: " + textChannelName);
         }
         catch (Exception ex)
         {
             Debug.LogException(ex);
         }
-       
     }
+    
     public async Task JoinVoiceChannel(string textChannelName = "CH1")
     {
         if (!VivoxService.Instance.IsLoggedIn) return;
         try
         {
-            await VivoxService.Instance.JoinGroupChannelAsync(textChannelName, ChatCapability.AudioOnly);
-
+            CurrentVoiceChannel = textChannelName;
+            Channel3DProperties properties = new Channel3DProperties();
+            await VivoxService.Instance.JoinPositionalChannelAsync(textChannelName, ChatCapability.AudioOnly, properties);
+            Debug.Log("Te uniste al canal de VOZ: " + textChannelName);
+            //await VivoxService.Instance.JoinGroupChannelAsync(textChannelName, ChatCapability.AudioOnly);
            // await VivoxService.Instance.JoinEchoChannelAsync(textChannelName, ChatCapability.AudioOnly);
 
             Debug.Log("Te uniste al canal : " + textChannelName);
@@ -73,7 +78,6 @@ public class VivoxManager : PersistentSingleton<VivoxManager>
         {
             Debug.LogException(ex);
         }
-
     }
     #region TextStuff
     public async Task LeaveTextChannel(string textChannelName = "CH1")
@@ -245,4 +249,84 @@ public class VivoxManager : PersistentSingleton<VivoxManager>
 
     }
 
+
+    // --- MÉTODOS NUEVOS PARA UI Y LOBBY ---
+
+    /// <summary>
+    /// Silencia o desilencia el micrófono propio.
+    /// </summary>
+    public void ToggleMute()
+    {
+        if (!VivoxService.Instance.IsLoggedIn) return;
+        IsMuted = !IsMuted;
+        VivoxService.Instance.MuteOutputDevice();
+        Debug.Log(IsMuted ? "Micrófono MUTEADO" : "Micrófono ACTIVADO");
+    }
+
+    /// <summary>
+    /// Sale de todos los canales de Vivox (texto y voz).
+    /// </summary>
+    public async Task LeaveAllChannelsAsync()
+    {
+        if (!VivoxService.Instance.IsLoggedIn) return;
+
+        try
+        {
+            if (!string.IsNullOrEmpty(CurrentTextChannel))
+            {
+                await VivoxService.Instance.LeaveChannelAsync(CurrentTextChannel);
+            }
+            if (!string.IsNullOrEmpty(CurrentVoiceChannel))
+            {
+                await VivoxService.Instance.LeaveChannelAsync(CurrentVoiceChannel);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
+        }
+        finally
+        {
+            CurrentTextChannel = null;
+            CurrentVoiceChannel = null;
+            Debug.Log("Has salido de todos los canales de Vivox.");
+        }
+    }
+
+    /// <summary>
+    /// Establece el volumen de un jugador específico en el canal de voz actual.
+    /// </summary>
+    /// <param name="unityPlayerId">El ID de jugador de Unity (AuthenticationService.Instance.PlayerId)</param>
+    /// <param name="volumeDb">Volumen en dB. -50 es mute, 0 es normal, +50 es max.</param>
+    public void SetParticipantVolume(string unityPlayerId, int volumeDb)
+    {
+        if (string.IsNullOrEmpty(CurrentVoiceChannel) || !VivoxService.Instance.IsLoggedIn) return;
+
+        try
+        {
+            // Busca el canal de voz activo
+            var channel = VivoxService.Instance.ActiveChannels.FirstOrDefault(c => c.Key == CurrentVoiceChannel).Value;
+            if (channel == null)
+            {
+                Debug.LogWarning($"No se encontró el canal de voz {CurrentVoiceChannel}");
+                return;
+            }
+
+            // Busca al participante por su Unity Player ID
+            var participant = channel.FirstOrDefault(p => p.PlayerId == unityPlayerId);
+            if (participant != null)
+            {
+                participant.SetLocalVolume(Mathf.Clamp(volumeDb, -50, 50));
+                Debug.Log($"Volumen de {participant.DisplayName} seteado a {volumeDb}dB");
+            }
+            else
+            {
+                Debug.LogWarning($"No se encontró al participante con ID {unityPlayerId} en el canal.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
+        }
+    }
 }
