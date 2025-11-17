@@ -30,15 +30,13 @@ public class PlayerDash : MonoBehaviour
         inputHandler.OnDashPressed -= HandleDashPressed;
     }
 
-    private void HandleDashPressed()
+    private void HandleDashPressed(Vector2 dashDirection)
     {
         if (canDash)
         {
-            Vector2 direction = inputHandler.GetCurrentMoveDirection();
-            
-            if (direction.sqrMagnitude > 0.1f)
+            if (dashDirection.sqrMagnitude > 0.1f)
             {
-                playerMovement.PerformDash(direction);
+                playerMovement.PerformDash(dashDirection);
                 StartCoroutine(DashCooldownCoroutine());
             }
         }
