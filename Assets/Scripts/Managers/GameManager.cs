@@ -3,6 +3,7 @@ using TMPro;
 using System.Threading.Tasks;
 using System; 
 using Unity.Services.Authentication;
+using Unity.Services.Core;
 
 public class GameManager : MonoBehaviour
 {
@@ -25,15 +26,6 @@ public class GameManager : MonoBehaviour
     [SerializeField] private AnonymousAuthService anonymousAuthService;
     [SerializeField] private UnityAccountAuthService unityAccountAuthService;
 
-
-    private void Start()
-    {
-        loginButtonsPanel.SetActive(false);
-        statusText.text = "Initializing Services...";
-        statusText.text = "Ready to login";
-        loginButtonsPanel.SetActive(true);
-    }
-
     private void OnEnable()
     {
         anonymousAuthService.OnSignedIn.AddListener(HandleLoginSuccess_Guest);
@@ -41,6 +33,8 @@ public class GameManager : MonoBehaviour
 
         unityAccountAuthService.OnSignedIn.AddListener(HandleLoginSuccess_Unity);
         unityAccountAuthService.OnSignInFailed.AddListener(HandleLoginFailed);
+
+        PlayerAccountManager.OnProfileLoaded += OnProfileUpdated;
     }
 
     private void OnDisable()
@@ -50,8 +44,82 @@ public class GameManager : MonoBehaviour
 
         unityAccountAuthService.OnSignedIn.RemoveListener(HandleLoginSuccess_Unity);
         unityAccountAuthService.OnSignInFailed.RemoveListener(HandleLoginFailed);
+
+        PlayerAccountManager.OnProfileLoaded -= OnProfileUpdated;
+    }
+    private async void Start()
+    {
+        loginButtonsPanel.SetActive(false);
+        statusText.text = "Initializing Services...";
+
+        try
+        {
+            await UnityServices.InitializeAsync();
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Error inicializando Unity Services: {e.Message}");
+            statusText.text = "Init Failed";
+            return;
+        }
+        if (AuthenticationService.Instance.IsSignedIn)
+        {
+            Debug.Log("GameManager: Sesión restaurada automáticamente. Saltando login manual.");
+
+            bool wasGuest = PlayerPrefs.GetString("LastLoginType") == "Guest";
+
+            if (wasGuest) HandleLoginSuccess_Guest(AuthenticationService.Instance.PlayerInfo);
+            else HandleLoginSuccess_Unity(AuthenticationService.Instance.PlayerInfo);
+
+            return;
+        }
+
+        if (PlayerPrefs.HasKey("LastLoginType"))
+        {
+            string lastType = PlayerPrefs.GetString("LastLoginType");
+            statusText.text = $"Auto-logging in as {lastType}...";
+
+            try
+            {
+                if (lastType == "Unity")
+                {
+                    await unityAccountAuthService.SignInAsync();
+                }
+                else
+                {
+                    await anonymousAuthService.SignInAsync();
+                }
+                return;
+            }
+            catch (Exception e)
+            {
+                if (AuthenticationService.Instance.IsSignedIn)
+                {
+                    HandleLoginSuccess_Unity(AuthenticationService.Instance.PlayerInfo);
+                    return;
+                }
+
+                Debug.LogWarning($"Auto-login falló: {e.Message}. Mostrando botones.");
+                PlayerPrefs.DeleteKey("LastLoginType");
+            }
+        }
+
+        statusText.text = "Ready to login";
+        loginButtonsPanel.SetActive(true);
     }
 
+    public void OnProfileUpdated(UserProfileData data)
+    {
+        if (playerNameText != null)
+        {
+            playerNameText.text = PlayerAccountManager.Instance.PlayerName;
+        }
+
+        if (statusText != null)
+        {
+            statusText.text = "Welcome, " + PlayerAccountManager.Instance.PlayerName;
+        }
+    }
     public async void OnClick_LoginWithUnity()
     {
         loginButtonsPanel.SetActive(false);
@@ -85,12 +153,20 @@ public class GameManager : MonoBehaviour
     private async void HandleLoginSuccess_Guest(PlayerInfo info)
     {
         await PlayerAccountManager.Instance.OnLoginSuccess(isGuest: true);
+        if (VivoxManager.Instance != null)
+        {
+            _ = VivoxManager.Instance.LoginVivox();
+        }
         OnLoginSuccessUIUpdate();
     }
 
     private async void HandleLoginSuccess_Unity(PlayerInfo info)
     {
         await PlayerAccountManager.Instance.OnLoginSuccess(isGuest: false);
+        if (VivoxManager.Instance != null)
+        {
+            _ = VivoxManager.Instance.LoginVivox();
+        }
         OnLoginSuccessUIUpdate();
     }
 
@@ -107,55 +183,10 @@ public class GameManager : MonoBehaviour
         statusText.text = "Welcome, " + PlayerAccountManager.Instance.PlayerName;
         fadeManager.StartFadeTransition();
     }
-
-    public async void ChangePlayerName()
-    {
-        string newName = nameInputField.text.Trim();
-
-        if (string.IsNullOrEmpty(newName))
-        {
-            statusText.text = "Enter a valid name.";
-            return;
-        }
-
-        if (newName.Contains(" "))
-        {
-            statusText.text = "El nombre no puede contener espacios.";
-            return;
-        }
-
-        statusText.text = "Updating name...";
-
-        try
-        {
-            string updatedName = await PlayerAccountManager.Instance.ChangePlayerName(newName);
-
-            playerNameText.text = updatedName;
-            statusText.text = "Name updated!";
-            panelChangeName.SetActive(false);
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"Failed to change name: {e.Message}");
-            if (e.Message.Contains("Invalid Player name"))
-            {
-                statusText.text = "Nombre inválido (no uses espacios).";
-            }
-            else
-            {
-                statusText.text = "Error: Could not change name.";
-            }
-        }
-    }
-
-    public void GenerateRandomName()
-    {
-        nameInputField.text = PlayerAccountManager.Instance.GenerateRandomName();
-    }
-
     public void ToggleChangeNamePanel()
     {
         panelChangeName.SetActive(!panelChangeName.activeSelf);
+        buttonsMenu.SetActive(!panelChangeName.activeSelf);
         if (panelChangeName.activeSelf)
         {
             nameInputField.text = PlayerAccountManager.Instance.PlayerName;

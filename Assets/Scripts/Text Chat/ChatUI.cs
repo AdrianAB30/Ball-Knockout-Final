@@ -68,10 +68,21 @@ public class ChatUI : MonoBehaviour
         string message = chatInputField.text;
         if (string.IsNullOrWhiteSpace(message)) return;
 
+        // Limpiar el campo de texto inmediatamente
         chatInputField.text = "";
 
+        // Verificar que estamos conectados a un canal de texto
+        string channelName = VivoxManager.Instance.CurrentTextChannel;
+        if (string.IsNullOrEmpty(channelName))
+        {
+            Debug.LogError("Error de Chat: No se está en ningún canal de texto.");
+            return;
+        }
+
+        // Lógica de comandos
         if (message.StartsWith("/sendto "))
         {
+            // Parsear el comando: /sendto "Nombre" Mensaje
             string command = message.Substring("/sendto ".Length);
             int firstQuote = command.IndexOf('"');
             int secondQuote = command.IndexOf('"', firstQuote + 1);
@@ -83,17 +94,38 @@ public class ChatUI : MonoBehaviour
 
                 if (string.IsNullOrWhiteSpace(messageContent)) return;
 
-                Debug.Log($"Enviando mensaje privado a {targetName}: {messageContent}");
-                await VivoxManager.Instance.SendDirectMessage(messageContent, targetName);
+                string targetId = LobbyManager.Instance.GetPlayerIdByName(targetName);
+
+                if (!string.IsNullOrEmpty(targetId))
+                {
+                    Debug.Log($"Enviando MP a {targetName} (ID: {targetId}): {messageContent}");
+
+                    await VivoxManager.Instance.SendDirectMessage(messageContent, targetId);
+
+                    var localMessage = new ChatMessage
+                    {
+                        SenderDisplayName = PlayerAccountManager.Instance.PlayerName, 
+                        RecipientDisplayName = targetName, 
+                        MessageText = messageContent,
+                        IsDirectMessage = true
+                    };
+
+                    DisplayNewMessage(localMessage);
+                }
+                else
+                {
+                    string errorMsg = $"[System]: No se encontró al jugador '{targetName}'.";
+                    DisplayNewMessage(new ChatMessage { MessageText = errorMsg, SenderDisplayName = "System" });
+                }
             }
             else
             {
-                Debug.LogWarning("Formato de mensaje privado incorrecto.");
+                Debug.LogWarning("Formato de mensaje privado incorrecto. Uso: /sendto \"Nombre\" Mensaje");
             }
         }
         else
         {
-            await VivoxManager.Instance.SendMessageToChannel(message, VivoxManager.Instance.CurrentTextChannel);
+            await VivoxManager.Instance.SendMessageToChannel(message, channelName);
         }
     }
 
@@ -108,18 +140,16 @@ public class ChatUI : MonoBehaviour
             {
                 formattedMessage = $"[Private to {message.RecipientDisplayName}]: {message.MessageText}";
             }
-            else 
+            else
             {
                 formattedMessage = $"[Private from {message.SenderDisplayName}]: {message.MessageText}";
             }
         }
-        else 
+        else
         {
             formattedMessage = $"[All] {message.SenderDisplayName}: {message.MessageText}";
         }
-
-
-        GameObject messageGO = Instantiate(chatMessagePrefab, chatContentContainer);
+        GameObject messageGO = Instantiate(chatMessagePrefab, chatContentContainer);
         TextMeshProUGUI messageText = messageGO.GetComponent<TextMeshProUGUI>();
         if (messageText != null)
         {

@@ -2,104 +2,68 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
-using Unity.Services.Vivox; 
+using Unity.Services.Vivox;
 using System.Linq;
 using System;
 
 public class VoiceOptionsUI : MonoBehaviour
 {
-    [SerializeField] private TMP_Dropdown inputDeviceDropdown;
-    [SerializeField] private TMP_Dropdown outputDeviceDropdown;
-    [SerializeField] private Button muteButton;
+    [SerializeField] private TMP_Dropdown inputDropdown;
+    [SerializeField] private TMP_Dropdown outputDropdown;
 
-    private List<VivoxInputDevice> _inputDevices;
-    private List<VivoxOutputDevice> _outputDevices;
+    private List<VivoxInputDevice> inputDevices;
+    private List<VivoxOutputDevice> outputDevices;
 
     void Start()
     {
-        if (VivoxManager.Instance == null)
+        inputDropdown.onValueChanged.AddListener(OnInputDeviceChanged);
+        outputDropdown.onValueChanged.AddListener(OnOutputDeviceChanged);
+
+        if (VivoxManager.Instance.IsInitialized)
         {
-            Debug.LogError("VoiceOptionsUI necesita que VivoxManager esté en la escena.");
-            gameObject.SetActive(false);
-            return;
+            Debug.Log("VoiceOptionsUI: Vivox ya estaba inicializado. Rellenando listas...");
+            PopulateDeviceDropdowns();
         }
-
-        VivoxService.Instance.AvailableInputDevicesChanged += RefreshInputDevices;
-        VivoxService.Instance.AvailableOutputDevicesChanged += RefreshOutputDevices;
-
-        muteButton.onClick.AddListener(OnMuteClicked);
-        inputDeviceDropdown.onValueChanged.AddListener(OnInputDeviceSelected);
-        outputDeviceDropdown.onValueChanged.AddListener(OnOutputDeviceSelected);
-
-        RefreshInputDevices();
-        RefreshOutputDevices();
-    }
-
-    void OnDestroy()
-    {
-        if (VivoxService.Instance != null)
+        else
         {
-            VivoxService.Instance.AvailableInputDevicesChanged -= RefreshInputDevices;
-            VivoxService.Instance.AvailableOutputDevicesChanged -= RefreshOutputDevices;
-        }
-
-        if (muteButton != null) muteButton.onClick.RemoveListener(OnMuteClicked);
-        if (inputDeviceDropdown != null) inputDeviceDropdown.onValueChanged.RemoveListener(OnInputDeviceSelected);
-        if (outputDeviceDropdown != null) outputDeviceDropdown.onValueChanged.RemoveListener(OnOutputDeviceSelected);
-    }
-
-    private void RefreshInputDevices()
-    {
-        _inputDevices = VivoxService.Instance.AvailableInputDevices.ToList();
-        inputDeviceDropdown.ClearOptions();
-
-        if (_inputDevices.Count == 0) return;
-
-        var options = _inputDevices.Select(d => d.DeviceName).ToList();
-        inputDeviceDropdown.AddOptions(options);
-
-        var activeDevice = VivoxService.Instance.ActiveInputDevice;
-        if (activeDevice != null)
-        {
-            inputDeviceDropdown.value = _inputDevices.FindIndex(d => d.DeviceID == activeDevice.DeviceID);
+            Debug.Log("VoiceOptionsUI: Vivox no está listo. Suscribiendo al evento...");
+            VivoxManager.OnVivoxInitialized += PopulateDeviceDropdowns;
         }
     }
-
-    private void RefreshOutputDevices()
+    private void OnDestroy()
     {
-        _outputDevices = VivoxService.Instance.AvailableOutputDevices.ToList();
-        outputDeviceDropdown.ClearOptions();
-
-        if (_outputDevices.Count == 0) return;
-
-        var options = _outputDevices.Select(d => d.DeviceName).ToList();
-        outputDeviceDropdown.AddOptions(options);
-
-        var activeDevice = VivoxService.Instance.ActiveOutputDevice;
-        if (activeDevice != null)
-        {
-            outputDeviceDropdown.value = _outputDevices.FindIndex(d => d.DeviceID == activeDevice.DeviceID);
-        }
+        VivoxManager.OnVivoxInitialized -= PopulateDeviceDropdowns;
     }
 
-    private void OnInputDeviceSelected(int index)
+    private void PopulateDeviceDropdowns()
     {
-        if (index >= 0 && index < _inputDevices.Count)
-        {
-            VivoxManager.Instance.SelectInputDevice(_inputDevices[index].DeviceID);
-        }
+        Debug.Log("Vivox inicializado. Rellenando listas de dispositivos...");
+
+        inputDevices = VivoxManager.Instance.GetInputDevices();
+        inputDropdown.ClearOptions();
+        inputDropdown.AddOptions(inputDevices.Select(d => d.DeviceName).ToList());
+
+        outputDevices = VivoxManager.Instance.GetOutputDevices();
+        outputDropdown.ClearOptions();
+        outputDropdown.AddOptions(outputDevices.Select(d => d.DeviceName).ToList());
+
+        inputDropdown.SetValueWithoutNotify(inputDevices.IndexOf(VivoxService.Instance.ActiveInputDevice));
+        outputDropdown.SetValueWithoutNotify(outputDevices.IndexOf(VivoxService.Instance.ActiveOutputDevice));
     }
 
-    private void OnOutputDeviceSelected(int index)
+    public void OnInputDeviceChanged(int index)
     {
-        if (index >= 0 && index < _outputDevices.Count)
-        {
-            VivoxManager.Instance.SelectOutputDevice(_outputDevices[index].DeviceID);
-        }
+        if (inputDevices == null || index < 0 || index >= inputDevices.Count) return;
+
+        VivoxInputDevice selectedDevice = inputDevices[index];
+        VivoxManager.Instance.SetInputDevice(selectedDevice);
     }
 
-    private void OnMuteClicked()
+    public void OnOutputDeviceChanged(int index)
     {
-        VivoxManager.Instance.ToggleMute(); 
+        if (outputDevices == null || index < 0 || index >= outputDevices.Count) return;
+
+        VivoxOutputDevice selectedDevice = outputDevices[index];
+        VivoxManager.Instance.SetOutputDevice(selectedDevice);
     }
 }
