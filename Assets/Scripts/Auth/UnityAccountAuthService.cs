@@ -17,42 +17,45 @@ public class UnityAccountAuthService : BaseAuthService
         {
             await EnsureInitialized();
 
-            // 1. Chequeo Rápido
-            if (AuthenticationService.Instance.IsSignedIn)
+            if (AuthenticationService.Instance.IsSignedIn && PlayerAccountService.Instance.IsSignedIn)
             {
-                Debug.Log($"[{ServiceType}] Ya estabas logueado. Éxito inmediato.");
+                Debug.Log($"[{ServiceType}] Ya estabas logueado con Unity. Éxito inmediato.");
                 HandleSignedIn();
                 return;
             }
+            if (AuthenticationService.Instance.IsSignedIn)
+            {
+                Debug.Log($"[{ServiceType}] Sesión previa detectada (posiblemente Guest). Cerrando para iniciar con Unity...");
+                AuthenticationService.Instance.SignOut();
+            }
 
-            // 2. Configurar eventos
             if (PlayerAccountService.Instance != null)
             {
                 PlayerAccountService.Instance.SignedIn -= HandleUnityAccountSignedIn;
                 PlayerAccountService.Instance.SignedIn += HandleUnityAccountSignedIn;
             }
 
-            isActiveAuthSource = true; // Activamos la bandera
+            isActiveAuthSource = true;
             OnUnityAccountSignInStarted?.Invoke();
 
-            // 3. Intentar login
             await PlayerAccountService.Instance.StartSignInAsync();
+        }
+        catch (RequestFailedException ex)
+        {
+            if (ex.Message.Contains("already signing in") || ex.ErrorCode == 8001)
+            {
+                Debug.LogWarning($"[{ServiceType}] Login en progreso detectado. Esperando...");
+                return;
+            }
+
+            Debug.LogError($"[{ServiceType}] Unity Account sign in failed: {ex.Message}");
+            isActiveAuthSource = false;
+            throw;
         }
         catch (Exception ex)
         {
-            // --- LA CORRECCIÓN MÁGICA ---
-            // Si el error es "Already signing in" (Conflicto de editor), NO cancelamos.
-            if (ex.Message.Contains("already signing in"))
-            {
-                Debug.LogWarning($"[{ServiceType}] Conflicto detectado: Unity ya se está logueando. Esperando éxito...");
-                // IMPORTANTE: NO ponemos isActiveAuthSource = false. 
-                // La dejamos en true y esperamos a que el evento de éxito llegue solo.
-                return;
-            }
-            // -----------------------------
-
-            Debug.LogError($"[{ServiceType}] Unity Account sign in failed: {ex.Message}");
-            isActiveAuthSource = false; // Solo cancelamos si es un error real
+            Debug.LogError($"[{ServiceType}] Error general: {ex.Message}");
+            isActiveAuthSource = false;
             throw;
         }
     }

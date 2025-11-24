@@ -10,25 +10,17 @@ public class AnonymousAuthService : BaseAuthService
 {
     public override async Task SignInAsync()
     {
-        if (!IsInitialized)
-        {
-            Debug.LogWarning($"[{ServiceType}] Authentication service not initialized");
-            throw new InvalidOperationException("Authentication service not initialized");
-        }
+        await EnsureInitialized();
+
         try
         {
-            isActiveAuthSource = true; 
-
             if (AuthenticationService.Instance.IsSignedIn)
             {
-                Debug.Log($"[{ServiceType}] Player is already signed in");
-                HandleSignedIn();
-                isActiveAuthSource = false; 
-                return;
+                AuthenticationService.Instance.SignOut();
             }
 
+            isActiveAuthSource = true;
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
-
         }
         catch (System.Exception ex)
         {
