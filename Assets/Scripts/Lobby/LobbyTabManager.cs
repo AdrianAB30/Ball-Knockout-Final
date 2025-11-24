@@ -13,6 +13,7 @@ public class LobbyTabManager : MonoBehaviour
     [SerializeField] private GameObject createLobbyGroup;
 
     [SerializeField] private GameObject lobbyCreatedGroup; 
+    [SerializeField] private GameObject playerName; 
 
     void OnEnable()
     {
@@ -44,7 +45,8 @@ public class LobbyTabManager : MonoBehaviour
         {
             joinLobbyGroup.SetActive(false);
             createLobbyGroup.SetActive(false);
-            lobbyCreatedGroup.SetActive(true); 
+            lobbyCreatedGroup.SetActive(true);
+            playerName.SetActive(false);
 
             joinTabButton.gameObject.SetActive(false);
             createTabButton.gameObject.SetActive(false);
@@ -52,6 +54,7 @@ public class LobbyTabManager : MonoBehaviour
         else
         {
             lobbyCreatedGroup.SetActive(false);
+            playerName.SetActive(true);
 
             joinTabButton.gameObject.SetActive(true);
             createTabButton.gameObject.SetActive(true);

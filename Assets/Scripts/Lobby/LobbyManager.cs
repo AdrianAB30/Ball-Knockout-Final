@@ -15,6 +15,9 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
     private const string KEY_RELAY_CODE = "RelayJoinCode";
     public const string KEY_PLAYER_READY = "PlayerReady";
     public const string KEY_PLAYER_NAME = "PlayerName";
+    public const string KEY_GAME_MODE = "GameMode";
+    public const string KEY_MAP_TYPE = "MapType";
+    public const string KEY_AVATAR_ID = "AvatarID";
 
 
     // --- Propiedades P�blicas ---
@@ -41,7 +44,6 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
     [SerializeField] public RelayServiceManager _relayManager;
     private ILobbyEvents _lobbyEvents;
 
-    // --- Suscripci�n a Eventos de la UI ---
     protected override void Awake()
     {
         base.Awake();
@@ -60,7 +62,6 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
 
     private void OnDestroy()
     {
-        // Desuscribirse de todos los eventos
         CreateLobbyUI.OnCreateLobbyRequested -= CreateLobby;
         LobbyListUI.OnRefreshRequested -= RefreshLobbyList;
         LobbyListUI.OnJoinByCodeRequested -= JoinLobbyByCode;
@@ -104,7 +105,6 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
         }
     }
 
-    // --- M�todos de Eventos de Lobby ---
     private async Task SubscribeToLobbyEvents(Lobby lobby)
     {
         try
@@ -137,12 +137,9 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
     {
         var playerData = new Dictionary<string, PlayerDataObject>
         {
-            { KEY_PLAYER_NAME, new PlayerDataObject(
-                visibility: PlayerDataObject.VisibilityOptions.Member,
-                value: PlayerAccountManager.Instance.PlayerName) },
-            { KEY_PLAYER_READY, new PlayerDataObject(
-                visibility: PlayerDataObject.VisibilityOptions.Member,
-                value: "false") }
+            { KEY_PLAYER_NAME, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, PlayerAccountManager.Instance.PlayerName) },
+            { KEY_PLAYER_READY, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, "false") },
+            { KEY_AVATAR_ID, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, PlayerAccountManager.Instance.CurrentProfile.avatarIndex.ToString()) }
         };
         return new Player { Data = playerData };
     }
@@ -156,12 +153,13 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
         CurrentRelayCode = null;
     }
 
-    // --- M�todos Privados (Llamados por Eventos de UI) ---
 
     private async void CreateLobby(string lobbyName, int maxPlayers)
     {
         try
         {
+            int myAvatarIndex = PlayerAccountManager.Instance.CurrentProfile.avatarIndex;
+
             string relayCode = await _relayManager.CreateRelay(maxPlayers);
             if (string.IsNullOrEmpty(relayCode)) throw new Exception("Failed to create Relay.");
 
@@ -171,10 +169,20 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
             CreateLobbyOptions options = new CreateLobbyOptions
             {
                 IsPrivate = false,
-                Player = GetNewPlayerData(),
+                Player = new Player
+                {
+                    Data = new Dictionary<string, PlayerDataObject>
+                    {
+                        { KEY_PLAYER_NAME, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, PlayerAccountManager.Instance.PlayerName) },
+                        { KEY_PLAYER_READY, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, "false") },
+                        { KEY_AVATAR_ID, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, myAvatarIndex.ToString()) }
+                    }
+                },
                 Data = new Dictionary<string, DataObject>
                 {
-                    { KEY_RELAY_CODE, new DataObject(DataObject.VisibilityOptions.Member, relayCode) }
+                    { KEY_RELAY_CODE, new DataObject(DataObject.VisibilityOptions.Member, relayCode) },
+                    { KEY_GAME_MODE, new DataObject(DataObject.VisibilityOptions.Public, "1v1 Competitivo") },
+                    { KEY_MAP_TYPE, new DataObject(DataObject.VisibilityOptions.Public, "Estadio Pixel") }
                 }
             };
 
@@ -184,12 +192,8 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
             _heartbeatTimer = 15f;
 
             await SubscribeToLobbyEvents(lobby);
-            OnLobbyJoinedOrLeft?.Invoke();
 
-            Debug.Log("Lobby Creado. Logueando en Vivox y Uniendo a canales...");
-            await VivoxManager.Instance.LoginVivox();
-            await VivoxManager.Instance.JoinTextChannel(JoinedLobby.Id);
-            await VivoxManager.Instance.JoinVoiceChannel(JoinedLobby.Id);
+            OnLobbyJoinedOrLeft?.Invoke();
 
             OnLobbyUpdated?.Invoke(JoinedLobby);
         }
@@ -235,11 +239,8 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
             CurrentRelayCode = _relayManager.RelayJoinCode;
 
             await SubscribeToLobbyEvents(JoinedLobby);
-            Debug.Log("Unido al Lobby. Logueando en Vivox y Uniendo a canales...");
+            Debug.Log("Unido al Lobby. Logueando en Vivox y Uniendo a canales.");
 
-            await VivoxManager.Instance.LoginVivox(); 
-            await VivoxManager.Instance.JoinTextChannel(JoinedLobby.Id);
-            await VivoxManager.Instance.JoinVoiceChannel(JoinedLobby.Id);
 
             OnLobbyJoinedOrLeft?.Invoke();
         }
@@ -265,11 +266,8 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
 
             await SubscribeToLobbyEvents(JoinedLobby);
 
-            Debug.Log("Unido al Lobby. Logueando en Vivox y Uniendo a canales...");
+            Debug.Log("Unido al Lobby. Logueando en Vivox y Uniendo a canales.");
 
-            await VivoxManager.Instance.LoginVivox(); 
-            await VivoxManager.Instance.JoinTextChannel(JoinedLobby.Id);
-            await VivoxManager.Instance.JoinVoiceChannel(JoinedLobby.Id);
 
             OnLobbyJoinedOrLeft?.Invoke();
         }
@@ -295,11 +293,7 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
 
             await SubscribeToLobbyEvents(JoinedLobby);
 
-            Debug.Log("Unido al Lobby. Logueando en Vivox y Uniendo a canales...");
-
-            await VivoxManager.Instance.LoginVivox(); 
-            await VivoxManager.Instance.JoinTextChannel(JoinedLobby.Id);
-            await VivoxManager.Instance.JoinVoiceChannel(JoinedLobby.Id);
+            Debug.Log("Unido al Lobby. Logueando en Vivox y Uniendo a canales.");
             OnLobbyJoinedOrLeft?.Invoke();
         }
         catch (LobbyServiceException e)
@@ -407,7 +401,7 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
     }
     public async Task UpdatePlayerNameInLobby(string newName)
     {
-        if (JoinedLobby == null) return; // No estamos en un lobby, no hay nada que actualizar
+        if (JoinedLobby == null) return; 
 
         try
         {
@@ -429,5 +423,21 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
         {
             Debug.LogError($"Error al actualizar el nombre del jugador en el lobby: {e}");
         }
+    }
+    public string GetPlayerIdByName(string playerName)
+    {
+        if (JoinedLobby == null) return null;
+
+        foreach (var player in JoinedLobby.Players)
+        {
+            if (player.Data != null && player.Data.TryGetValue(KEY_PLAYER_NAME, out PlayerDataObject nameData))
+            {
+                if (nameData.Value == playerName)
+                {
+                    return player.Id; 
+                }
+            }
+        }
+        return null;
     }
 }

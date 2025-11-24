@@ -18,32 +18,37 @@ public abstract class BaseAuthService : MonoBehaviour
     protected string ServiceType => GetType().Name;
     protected bool isActiveAuthSource = false;
 
-    protected virtual async void Start()
-    {
-        await InitializeAuthentication();
-    }
 
-    protected virtual async Task InitializeAuthentication()
+    protected virtual async Task EnsureInitialized()
     {
-        try
+        if (UnityServices.State != ServicesInitializationState.Initialized)
         {
-            if (UnityServices.State != ServicesInitializationState.Initialized)
+            try
             {
                 await UnityServices.InitializeAsync();
-                Debug.Log($"[{ServiceType}] Unity Services initialized: {UnityServices.State}");
+                Debug.Log($"[{ServiceType}] Unity Services initialized (Lazy Init)");
             }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[{ServiceType}] Failed to initialize Unity Services: {ex.Message}");
+                throw;
+            }
+        }
+
+        if (!IsInitialized)
+        {
             SetupAuthenticationEvents();
             IsInitialized = true;
-        }
-        catch (Exception ex)
-        {
-            Debug.LogError($"[{ServiceType}] Failed to initialize Unity Services: {ex.Message}");
-            OnSignInFailed?.Invoke(ex);
         }
     }
 
     protected virtual void SetupAuthenticationEvents()
     {
+        AuthenticationService.Instance.SignedIn -= HandleSignedIn;
+        AuthenticationService.Instance.SignInFailed -= HandleSignInFailed;
+        AuthenticationService.Instance.SignedOut -= HandleSignedOut;
+        AuthenticationService.Instance.Expired -= HandleSessionExpired;
+
         AuthenticationService.Instance.SignedIn += HandleSignedIn;
         AuthenticationService.Instance.SignInFailed += HandleSignInFailed;
         AuthenticationService.Instance.SignedOut += HandleSignedOut;
@@ -82,7 +87,7 @@ public abstract class BaseAuthService : MonoBehaviour
 
     protected virtual void OnDestroy()
     {
-        if (AuthenticationService.Instance != null)
+        if (UnityServices.State == ServicesInitializationState.Initialized && AuthenticationService.Instance != null)
         {
             AuthenticationService.Instance.SignedIn -= HandleSignedIn;
             AuthenticationService.Instance.SignInFailed -= HandleSignInFailed;
