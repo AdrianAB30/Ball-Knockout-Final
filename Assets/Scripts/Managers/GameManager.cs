@@ -12,6 +12,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TMP_Text playerNameText;
     [SerializeField] private TMP_InputField nameInputField;
     [SerializeField] private GameObject loginCanvas;
+    [SerializeField] private GameObject[] playerName;
     [SerializeField] private GameObject mainMenuCanvas;
     [SerializeField] private GameObject panelChangeName;
     [SerializeField] private GameObject lobbyPanel;
@@ -20,6 +21,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject loginButtonsPanel;
     [SerializeField] private GameObject createLobbyGroup;
     [SerializeField] private GameObject joinLobbyGroup;
+    [SerializeField] private GameObject editProfileButton;
 
     [Header("Service Dependencies")]
     [SerializeField] private FadeManager fadeManager;
@@ -93,14 +95,15 @@ public class GameManager : MonoBehaviour
             }
             catch (Exception e)
             {
-                if (AuthenticationService.Instance.IsSignedIn)
-                {
-                    HandleLoginSuccess_Unity(AuthenticationService.Instance.PlayerInfo);
-                    return;
-                }
+                Debug.LogWarning($"Auto-login falló ({e.Message}). Limpiando sesión...");
 
-                Debug.LogWarning($"Auto-login falló: {e.Message}. Mostrando botones.");
                 PlayerPrefs.DeleteKey("LastLoginType");
+                PlayerPrefs.Save();
+
+                if (UnityServices.State == Unity.Services.Core.ServicesInitializationState.Initialized)
+                {
+                    AuthenticationService.Instance.SignOut();
+                }
             }
         }
 
@@ -180,7 +183,6 @@ public class GameManager : MonoBehaviour
     private void OnLoginSuccessUIUpdate()
     {
         playerNameText.text = PlayerAccountManager.Instance.PlayerName;
-        statusText.text = "Welcome, " + PlayerAccountManager.Instance.PlayerName;
         fadeManager.StartFadeTransition();
     }
     public void ToggleChangeNamePanel()
@@ -199,10 +201,22 @@ public class GameManager : MonoBehaviour
         if (lobbyPanel.activeSelf)
         {
             buttonsMenu.SetActive(false);
+
+            for (int i = 0; i < playerName.Length; i++)
+            {
+                playerName[i].SetActive(false);
+            }
+            editProfileButton.SetActive(false);
+
         }
         else
         {
             buttonsMenu.SetActive(true);
+            for (int i = 0; i < playerName.Length; i++)
+            {
+                playerName[i].SetActive(true);
+            }
+            editProfileButton.SetActive(true);
         }
     }
     public void ToggleSettingsPanel()

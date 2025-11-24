@@ -12638,6 +12638,9 @@ MonoBehaviour:
   playerNameText: {fileID: 2131435636}
   nameInputField: {fileID: 756593707}
   loginCanvas: {fileID: 1435026523}
+  playerName:
+  - {fileID: 2131435635}
+  - {fileID: 1004369119}
   mainMenuCanvas: {fileID: 1680068423}
   panelChangeName: {fileID: 1064889510}
   lobbyPanel: {fileID: 1078370738}
@@ -12646,6 +12649,7 @@ MonoBehaviour:
   loginButtonsPanel: {fileID: 249803415}
   createLobbyGroup: {fileID: 717529099}
   joinLobbyGroup: {fileID: 1106603803}
+  editProfileButton: {fileID: 1541594543}
   fadeManager: {fileID: 323289834}
   anonymousAuthService: {fileID: 892333558}
   unityAccountAuthService: {fileID: 892333557}
@@ -13004,7 +13008,7 @@ GameObject:
   - component: {fileID: 1541594546}
   - component: {fileID: 1541594545}
   m_Layer: 5
-  m_Name: Change Name Btn
+  m_Name: Edit Profile Btn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
