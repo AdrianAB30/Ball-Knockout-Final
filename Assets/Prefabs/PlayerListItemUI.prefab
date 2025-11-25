@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 2440648524637855810}
   - component: {fileID: 5826481117816837639}
   - component: {fileID: 3715803403622171970}
+  - component: {fileID: 1250057953206777316}
   m_Layer: 5
   m_Name: Mute Btn
   m_TagString: Untagged
@@ -120,6 +121,19 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1250057953206777316
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 638992851491181850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bdc462ca86ea7e24193a6f89da404677, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  uiAnimations: {fileID: 11400000, guid: ffcbb36491a319944a1de614b357b988, type: 2}
 --- !u!1 &934880174316422911
 GameObject:
   m_ObjectHideFlags: 0
@@ -741,6 +755,7 @@ GameObject:
   - component: {fileID: 8568319482611193045}
   - component: {fileID: 5008454142523428917}
   - component: {fileID: 459453398077283723}
+  - component: {fileID: 466385595202708553}
   m_Layer: 5
   m_Name: Kick Button
   m_TagString: Untagged
@@ -850,6 +865,19 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &466385595202708553
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4480545243562043163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bdc462ca86ea7e24193a6f89da404677, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  uiAnimations: {fileID: 11400000, guid: ffcbb36491a319944a1de614b357b988, type: 2}
 --- !u!1 &5053009420450890096
 GameObject:
   m_ObjectHideFlags: 0

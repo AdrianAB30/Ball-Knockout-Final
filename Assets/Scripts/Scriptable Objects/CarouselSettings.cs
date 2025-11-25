@@ -1,7 +1,7 @@
 using UnityEngine;
 using DG.Tweening;
 
-[CreateAssetMenu(fileName = "CarouselSettings", menuName = "Carousel Settings", order = 1)]
+[CreateAssetMenu(fileName = "CarouselSettings", menuName = "ScriptableObjects/Carousel Settings", order = 1)]
 public class CarouselSettings : ScriptableObject
 {
     [Header("Tiempos y Curvas")]
