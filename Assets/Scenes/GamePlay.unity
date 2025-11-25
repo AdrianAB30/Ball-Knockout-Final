@@ -359,7 +359,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!212 &547079990
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -520,9 +520,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58c7f83e07127fe4c9558f18c170e3d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minDashDistance: 100
-  maxDashTime: 0.25
-  minTouchMoveThreshold: 5
+  minSwipeDistance: 50
 --- !u!114 &547079996
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1182,9 +1180,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58c7f83e07127fe4c9558f18c170e3d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minDashDistance: 100
-  maxDashTime: 0.25
-  minTouchMoveThreshold: 5
+  minSwipeDistance: 50
 --- !u!114 &4195829659147546008
 MonoBehaviour:
   m_ObjectHideFlags: 0

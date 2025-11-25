@@ -5,29 +5,26 @@ using System;
 public class PlayerInputHandler : MonoBehaviour
 {
     public event Action<Vector2> OnMoveInput;
-    public event Action<Vector2> OnDashPressed; 
+    public event Action<Vector2> OnDashPressed;
 
     [Header("Configuración de Swipe (Móvil)")]
-    [SerializeField] private float minDashDistance = 100f;
-    [SerializeField] private float maxDashTime = 0.25f;
-    
-    [Header("Configuración de Movimiento (Móvil)")]
-    [SerializeField] private float minTouchMoveThreshold = 5f;
+    [Tooltip("La distancia mínima en píxeles para registrar un swipe.")]
+    [SerializeField] private float minSwipeDistance = 50f;
+    [Tooltip("Tiempo máximo para que un gesto cuente como Dash (si tardas más, solo camina).")]
+    [SerializeField] private float maxDashTime = 0.3f;
 
+    [Header("Configuración de Movimiento (Móvil)")]
+    [Tooltip("Zona muerta: Mínimo movimiento del dedo para empezar a caminar.")]
+    [SerializeField] private float minMoveDistance = 10f;
+
+    // Variables internas
     private Vector2 currentMoveDirection;
-    
     private Vector2 touchStartPosition;
-    private Vector2 lastTouchPosition;
     private float touchStartTime;
     private bool isTouching = false;
-    private bool isMovementDrag = false;
-    
-    private Camera mainCamera;
 
     private void Awake()
     {
-        mainCamera = Camera.main;
-        
         if (Touchscreen.current != null)
         {
             InputSystem.EnableDevice(Touchscreen.current);
@@ -39,10 +36,15 @@ public class PlayerInputHandler : MonoBehaviour
         HandleTouchInput();
     }
 
+    // --- INPUT DE PC (TECLADO/MANDO) ---
     public void HandleMove(InputAction.CallbackContext context)
     {
         currentMoveDirection = context.ReadValue<Vector2>();
-        OnMoveInput?.Invoke(currentMoveDirection);
+
+        if (!isTouching)
+        {
+            OnMoveInput?.Invoke(currentMoveDirection);
+        }
     }
 
     public void HandleDash(InputAction.CallbackContext context)
@@ -50,13 +52,15 @@ public class PlayerInputHandler : MonoBehaviour
         if (context.performed)
         {
             Vector2 dashDirection = GetCurrentMoveDirection();
+            if (dashDirection == Vector2.zero) dashDirection = Vector2.right;
+
             if (dashDirection.sqrMagnitude > 0.1f)
             {
                 OnDashPressed?.Invoke(dashDirection);
             }
         }
     }
-    
+
     public Vector2 GetCurrentMoveDirection()
     {
         return currentMoveDirection.normalized;
@@ -66,62 +70,51 @@ public class PlayerInputHandler : MonoBehaviour
     {
         if (Touchscreen.current == null) return;
 
-        var primaryTouch = Touchscreen.current.primaryTouch;
-        Vector2 touchPosition = primaryTouch.position.ReadValue();
-        
-        switch (primaryTouch.phase.ReadValue())
+        var touch = Touchscreen.current.primaryTouch;
+
+        Vector2 currentTouchPos = touch.position.ReadValue();
+
+        if (touch.press.isPressed)
         {
-            case UnityEngine.InputSystem.TouchPhase.Began:
-                touchStartPosition = touchPosition;
-                lastTouchPosition = touchPosition;
+
+            if (!isTouching)
+            {
+                touchStartPosition = currentTouchPos;
                 touchStartTime = Time.time;
                 isTouching = true;
-                isMovementDrag = false;
-                break;
-            
-            case UnityEngine.InputSystem.TouchPhase.Moved:
-                if (!isTouching) return;
+            }
+            else
+            {
+                Vector2 moveVector = currentTouchPos - touchStartPosition;
 
-                float touchDuration = Time.time - touchStartTime;
-                Vector2 frameDragVector = touchPosition - lastTouchPosition;
-
-                if (touchDuration > maxDashTime || isMovementDrag)
+                if (moveVector.magnitude > minMoveDistance)
                 {
-                    isMovementDrag = true;
-                    
-                    if (frameDragVector.magnitude > minTouchMoveThreshold)
-                    {
-                        Vector2 moveDirection = frameDragVector.normalized;
-                        OnMoveInput?.Invoke(moveDirection);
-                    }
+                    OnMoveInput?.Invoke(moveVector.normalized);
                 }
-                
-                lastTouchPosition = touchPosition;
-                break;
-
-            case UnityEngine.InputSystem.TouchPhase.Ended:
-                if (!isTouching) return;
-                
-                isTouching = false;
-                float finalTouchDuration = Time.time - touchStartTime;
-                Vector2 finalSwipeVector = touchPosition - touchStartPosition;
-
-                if (!isMovementDrag && 
-                    finalTouchDuration <= maxDashTime && 
-                    finalSwipeVector.magnitude > minDashDistance)
+                else
                 {
-                    OnDashPressed?.Invoke(finalSwipeVector.normalized);
+                    OnMoveInput?.Invoke(Vector2.zero);
                 }
+            }
+        }
+        else if (isTouching)
+        {
+            isTouching = false;
 
-                OnMoveInput?.Invoke(Vector2.zero);
-                isMovementDrag = false;
-                break;
+            OnMoveInput?.Invoke(Vector2.zero);
 
-            case UnityEngine.InputSystem.TouchPhase.Canceled:
-                isTouching = false;
-                isMovementDrag = false;
-                OnMoveInput?.Invoke(Vector2.zero);
-                break;
+            float timeElapsed = Time.time - touchStartTime;
+            Vector2 swipeVector = currentTouchPos - touchStartPosition;
+
+            if (swipeVector.magnitude > minSwipeDistance && timeElapsed <= maxDashTime)
+            {
+                OnDashPressed?.Invoke(swipeVector.normalized);
+            }
+
+            if (currentMoveDirection != Vector2.zero)
+            {
+                OnMoveInput?.Invoke(currentMoveDirection);
+            }
         }
     }
 }

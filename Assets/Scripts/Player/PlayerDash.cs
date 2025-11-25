@@ -59,7 +59,7 @@ public class PlayerDash : MonoBehaviour
         if (otherMovement != null && !otherMovement.IsBeingPushed)
         {
             Debug.Log($"Empujando a {collision.gameObject.name}!");
-            
+
             Vector2 pushDirection = (collision.transform.position - transform.position).normalized;
             otherMovement.GetPushed(pushDirection, dashPushForce, pushDuration);
         }
