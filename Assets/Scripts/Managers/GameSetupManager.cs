@@ -12,6 +12,9 @@ public class GameSetupManager : MonoBehaviour
     [SerializeField] private Transform spawnPointP1;
     [SerializeField] private Transform spawnPointP2;
 
+    [Header("Data")]
+    [SerializeField] private LocalMatchConfigurationSO localMatchData;
+
     private void Start()
     {
         var gameManager = Object.FindFirstObjectByType<GameManager>(); 
@@ -40,63 +43,133 @@ public class GameSetupManager : MonoBehaviour
                 break;
         }
     }
-
+    // --- MODO ONLINE ---
     private void StartOnlineSession()
     {
         Debug.Log("Iniciando Modo Online...");
+
+        if (NetworkManager.Singleton == null) return;
+
+        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+
+        if (NetworkManager.Singleton.IsServer)
+        {
+            SpawnOnlinePlayer(NetworkManager.Singleton.LocalClientId);
+        }
+    }
+    private void OnClientConnected(ulong clientId)
+    {
+        if (NetworkManager.Singleton.IsServer)
+        {
+            SpawnOnlinePlayer(clientId);
+        }
+    }
+
+    private void SpawnOnlinePlayer(ulong clientId)
+    {
+
+        Transform spawnPoint = (clientId == 0) ? spawnPointP1 : spawnPointP2;
+
+        GameObject p = Instantiate(playerPrefab, spawnPoint.position, spawnPoint.rotation);
+
+        p.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId);
+    }
+
+    private void OnDestroy()
+    {
+        if (NetworkManager.Singleton != null)
+            NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
     }
 
     // --- MODO LOCAL (PANTALLA DIVIDIDA) ---
     private void StartLocalSession()
     {
-        Debug.Log("Iniciando Modo Local...");
+        Debug.Log("Iniciando Modo Local desde SO");
 
         if (Camera.main != null) Camera.main.gameObject.SetActive(false);
+        if (NetworkManager.Singleton != null) NetworkManager.Singleton.Shutdown();
 
-        if (NetworkManager.Singleton != null)
-            NetworkManager.Singleton.Shutdown();
+        if (localMatchData != null)
+        {
+            foreach (var device in localMatchData.Team1Devices)
+            {
+                SpawnLocalPlayer(device, 1);
+            }
 
-        GameObject p1 = Instantiate(playerPrefab, spawnPointP1.position, spawnPointP1.rotation);
-        SetupLocalPlayer(p1, 1); 
-
-        GameObject p2 = Instantiate(playerPrefab, spawnPointP2.position, spawnPointP2.rotation);
-        SetupLocalPlayer(p2, 2); 
+            foreach (var device in localMatchData.Team2Devices)
+            {
+                SpawnLocalPlayer(device, 2);
+            }
+        }
+        else
+        {
+            Debug.LogError("No has asignado el LocalMatchConfigurationSO en el GameSetupManager");
+        }
     }
-
-    private void SetupLocalPlayer(GameObject playerObj, int playerIndex)
+    private void SpawnLocalPlayer(InputDevice device, int teamId)
     {
+        Transform spawnPoint = (teamId == 1) ? spawnPointP1 : spawnPointP2;
 
-        Destroy(playerObj.GetComponent<NetworkObject>());
-        Destroy(playerObj.GetComponent<Unity.Netcode.Components.NetworkTransform>());
+        string schemeToUse = null;
+
+        if (device is Keyboard)
+        {
+            if (teamId == 1) schemeToUse = "KeyboardLeft";
+            else schemeToUse = "KeyboardRight";
+        }
+        else if (device is Gamepad)
+        {
+            schemeToUse = "Gamepad";
+        }
+        else if (device is Touchscreen)
+        {
+            schemeToUse = "Touch";
+        }
+
+        var p = PlayerInput.Instantiate(
+            playerPrefab,
+            controlScheme: schemeToUse, 
+            pairWithDevice: device
+        );
+
+        p.transform.position = spawnPoint.position;
+        p.transform.rotation = spawnPoint.rotation;
+
+        SetupLocalPlayerComponents(p.gameObject, teamId);
+    }
+    private void SetupLocalPlayerComponents(GameObject playerObj, int playerIndex)
+    {
+        var netRb = playerObj.GetComponent<Unity.Netcode.Components.NetworkRigidbody2D>();
+        if (netRb != null) Destroy(netRb);
+
+        var netTransform = playerObj.GetComponent<Unity.Netcode.Components.NetworkTransform>();
+        if (netTransform != null) Destroy(netTransform);
+
+        var netObj = playerObj.GetComponent<NetworkObject>();
+        if (netObj != null) Destroy(netObj);
 
         Camera cam = playerObj.GetComponentInChildren<Camera>();
         AudioListener listener = playerObj.GetComponentInChildren<AudioListener>();
 
-        if (playerIndex == 1)
+        if (cam != null)
         {
-            cam.rect = new Rect(0, 0.5f, 1, 0.5f);
-        }
-        else
-        {
-            cam.rect = new Rect(0, 0, 1, 0.5f);
-            if (listener) Destroy(listener);
-        }
-
-        PlayerInput input = playerObj.GetComponent<PlayerInput>();
-
-        // Esto es un ejemplo básico. Lo ideal es usar el PlayerInputManager,
-        // pero para forzar controles rápidos en PC:
-        if (playerIndex == 1)
-        {
-            input.SwitchCurrentControlScheme("Keyboard&Mouse", Keyboard.current, Mouse.current);
-        }
-        else
-        {
-            // P2 usa el primer Gamepad conectado
-            if (Gamepad.all.Count > 0)
-                input.SwitchCurrentControlScheme("Gamepad", Gamepad.all[0]);
+            if (playerIndex == 1)
+            {
+                cam.rect = new Rect(0, 0.5f, 1, 0.5f);
+            }
             else
-                Debug.LogWarning("No hay Gamepad para el Player 2");
+            {
+                cam.rect = new Rect(0, 0, 1, 0.5f);
+                if (listener) Destroy(listener);
+            }
+        }
+
+        Rigidbody2D rb = playerObj.GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            rb.bodyType = RigidbodyType2D.Dynamic; 
+            rb.simulated = true;
+            rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         }
     }
 }

@@ -2,21 +2,21 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement; 
 
-public class LocalGameLauncher : MonoBehaviour
+public class TransitionTeamSelection : MonoBehaviour
 {
     [Header("Referencias")]
     [SerializeField] private GameConfigurationSO gameConfig;
-    [SerializeField] private string gameSceneName = "GameScene";
+    [SerializeField] private string gameSceneName = "TeamSelectionScene";
 
     public void StartLocalMatch()
     {
         gameConfig.SetLocalMode();
 
-        Debug.Log("Iniciando partida LOCAL (Pantalla Dividida)...");
+        Debug.Log("Iniciando partida LOCAL (Pantalla Dividida).");
 
-        StartCoroutine(ChangeSceneLocal());
+        StartCoroutine(ChangeSceneSelectionTeam());
     }
-    private IEnumerator ChangeSceneLocal()
+    private IEnumerator ChangeSceneSelectionTeam()
     {
         yield return new WaitForSecondsRealtime(0.5f);
         SceneManager.LoadScene(gameSceneName);
