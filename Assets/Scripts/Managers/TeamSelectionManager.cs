@@ -9,7 +9,7 @@ public class TeamSelectionManager : MonoBehaviour
     [Header("Data Storage")]
     [SerializeField] private LocalMatchConfigurationSO matchData;
 
-    [Header("ConfiguraciÛn Global")]
+    [Header("Configuraci√≥n Global")]
     [SerializeField] private GameConfigurationSO gameConfig;
 
     [Header("Slots Fila 1 (Jugador 1)")]
@@ -26,7 +26,11 @@ public class TeamSelectionManager : MonoBehaviour
     [SerializeField] private Button startButton;
     [SerializeField] private string gameSceneName = "GameScene";
 
+    [Header("Player Prefab")]
+    [SerializeField] private GameObject playerPrefab;
+
     private List<TeamCursorController> _cursors = new List<TeamCursorController>();
+    private bool _player2Joined = false;
 
     private void Start()
     {
@@ -34,7 +38,53 @@ public class TeamSelectionManager : MonoBehaviour
         if (startButton) startButton.interactable = false;
 
         if (proP1 == null || proP2 == null)
-            Debug.LogError("°CUIDADO! Faltan asignar los Slots en el Inspector del TeamSelectionManager.");
+            Debug.LogError("¬°CUIDADO! Faltan asignar los Slots en el Inspector del TeamSelectionManager.");
+
+        if (playerPrefab == null)
+        {
+            var playerInputManager = FindFirstObjectByType<PlayerInputManager>();
+            if (playerInputManager != null)
+            {
+                playerPrefab = playerInputManager.playerPrefab;
+            }
+        }
+    }
+
+    private void Update()
+    {
+        if (Keyboard.current != null && Keyboard.current.enterKey.wasPressedThisFrame)
+        {
+            if (!_player2Joined && _cursors.Count == 1)
+            {
+                SpawnPlayer2WithArrowKeys();
+            }
+        }
+    }
+
+    private void SpawnPlayer2WithArrowKeys()
+    {
+        if (playerPrefab == null)
+        {
+            Debug.LogError("No hay playerPrefab asignado");
+            return;
+        }
+
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null)
+        {
+            Debug.LogError("No hay teclado disponible");
+            return;
+        }
+
+        var playerInput = PlayerInput.Instantiate(
+            playerPrefab,
+            controlScheme: "KeyboardRight",
+            pairWithDevice: keyboard
+        );
+
+        _player2Joined = true;
+
+        Debug.Log("Player 2 se uni√≥ con KeyboardRight (Flechitas)");
     }
 
     public void OnPlayerJoined(PlayerInput input)
@@ -52,6 +102,8 @@ public class TeamSelectionManager : MonoBehaviour
             input.transform.SetParent(startPos, false);
             input.transform.localPosition = Vector3.zero;
         }
+
+        Debug.Log($"Player {playerIndex + 1} se uni√≥ - Esquema: {input.currentControlScheme}");
     }
 
     public Transform GetTargetSlot(int playerIndex, int teamId)
@@ -91,7 +143,7 @@ public class TeamSelectionManager : MonoBehaviour
     {
         if (proP1 == null || noobP1 == null || proP2 == null || noobP2 == null)
         {
-            Debug.LogError("ERROR CRÕTICO: No se puede iniciar. Faltan asignar referencias (Transforms) en el Inspector.");
+            Debug.LogError("ERROR CR√çTICO: No se puede iniciar. Faltan asignar referencias (Transforms) en el Inspector.");
             return;
         }
 
@@ -110,7 +162,7 @@ public class TeamSelectionManager : MonoBehaviour
         }
         else
         {
-            Debug.Log("A˙n no est·n listos para empezar (Falta gente o equipos incorrectos).");
+            Debug.Log("A√∫n no est√°n listos para empezar (Falta gente o equipos incorrectos).");
         }
     }
 
@@ -127,7 +179,7 @@ public class TeamSelectionManager : MonoBehaviour
         }
         else
         {
-            Debug.LogError("°Falta asignar GameConfigurationSO en TeamSelectionManager!");
+            Debug.LogError("¬°Falta asignar GameConfigurationSO en TeamSelectionManager!");
         }
 
         foreach (var cursor in _cursors)
@@ -140,6 +192,5 @@ public class TeamSelectionManager : MonoBehaviour
 
         SceneManager.LoadScene(gameSceneName);
         Debug.Log("Iniciando Modo Local");
-
     }
 }

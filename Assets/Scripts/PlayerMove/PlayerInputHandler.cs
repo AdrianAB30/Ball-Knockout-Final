@@ -1,34 +1,41 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
+using System;
 
 public class PlayerInputHandler : NetworkBehaviour
 {
-    [Header("Configuraci�n")]
+    // Eventos
+    public event Action<Vector2> OnMoveInput;
+    public event Action<Vector2> OnDashPressed;
+
+    [Header("Configuración")]
     [SerializeField] private GameConfigurationSO gameConfig;
-    [SerializeField] private Camera _playerCamera;
+    // ❌ ELIMINAR ESTA LÍNEA
+    // [SerializeField] private Camera _playerCamera;
+
+    [Header("Configuración de Swipe (Móvil)")]
+    [Tooltip("La distancia mínima en píxeles para registrar un swipe.")]
+    [SerializeField] private float minSwipeDistance = 50f;
+    [Tooltip("Tiempo máximo para que un gesto cuente como Dash.")]
+    [SerializeField] private float maxDashTime = 0.3f;
+
+    [Header("Configuración de Movimiento (Móvil)")]
+    [Tooltip("Zona muerta: Mínimo movimiento del dedo para empezar a caminar.")]
+    [SerializeField] private float minMoveDistance = 10f;
 
     private PlayerInput _playerInput;
     private Rigidbody2D _rb;
 
     public Vector2 MoveDirection { get; private set; }
-    public Vector2 PointerPosition { get; private set; } 
-    public bool IsPressing { get; private set; } 
+    public Vector2 PointerPosition { get; private set; }
+    public bool IsPressing { get; private set; }
     public string CurrentScheme { get; private set; }
 
-    private bool _dashTriggeredInternal = false;
-    public bool DashPressedThisFrame
-    {
-        get
-        {
-            if (_dashTriggeredInternal)
-            {
-                _dashTriggeredInternal = false;
-                return true;
-            }
-            return false;
-        }
-    }
+    // Variables para touch/swipe
+    private Vector2 _touchStartPosition;
+    private float _touchStartTime;
+    private bool _isTouching = false;
 
     private void Awake()
     {
@@ -44,18 +51,33 @@ public class PlayerInputHandler : NetworkBehaviour
             return;
         }
 
+        // ❌ ELIMINAR TODO ESTE BLOQUE DE CÁMARA
+        /*
         if (_playerCamera == null)
         {
             var cam = GetComponentInChildren<Camera>();
             _playerCamera = cam != null ? cam : Camera.main;
         }
+        */
     }
+
     private bool ValidateInput()
     {
         if (gameConfig != null && gameConfig.CurrentGameMode == GameModeType.OnlineMultiplayer && !IsOwner)
             return false;
         return true;
     }
+
+    private void Update()
+    {
+        if (!ValidateInput()) return;
+
+        if (CurrentScheme == "Touch")
+        {
+            HandleTouchInput();
+        }
+    }
+
     public void OnControlsChanged(PlayerInput input)
     {
         if (!ValidateInput()) return;
@@ -63,16 +85,19 @@ public class PlayerInputHandler : NetworkBehaviour
 
         MoveDirection = Vector2.zero;
         IsPressing = false;
-        _dashTriggeredInternal = false;
+        _isTouching = false;
+        
+        OnMoveInput?.Invoke(Vector2.zero);
     }
 
-    public void OnMoveInput(InputAction.CallbackContext context)
+    public void OnMoveInputAction(InputAction.CallbackContext context)
     {
         if (!ValidateInput()) return;
 
         if (CurrentScheme == "Gamepad" || CurrentScheme == "KeyboardLeft" || CurrentScheme == "KeyboardRight")
         {
             MoveDirection = context.ReadValue<Vector2>();
+            OnMoveInput?.Invoke(MoveDirection);
         }
     }
 
@@ -80,61 +105,87 @@ public class PlayerInputHandler : NetworkBehaviour
     {
         if (!ValidateInput()) return;
 
-        if (context.performed) _dashTriggeredInternal = true;
+        if (context.performed)
+        {
+            Vector2 dashDirection = MoveDirection;
+            
+            if (dashDirection.sqrMagnitude < 0.1f)
+            {
+                dashDirection = Vector2.right;
+            }
+
+            OnDashPressed?.Invoke(dashDirection.normalized);
+        }
     }
 
     public void OnPointerPositionInput(InputAction.CallbackContext context)
     {
         if (!ValidateInput()) return;
-
         PointerPosition = context.ReadValue<Vector2>();
-
-        if ((CurrentScheme == "Touch" || CurrentScheme == "KeyboardLeft") && IsPressing)
-        {
-            CalculatePointerMovement();
-        }
     }
 
     public void OnPointerPressInput(InputAction.CallbackContext context)
     {
         if (!ValidateInput()) return;
-
         IsPressing = context.ReadValueAsButton();
-
-        if (!IsPressing && CurrentScheme == "Touch")
-        {
-            MoveDirection = Vector2.zero;
-        }
-        else if (IsPressing)
-        {
-            CalculatePointerMovement();
-        }
     }
 
-    private void CalculatePointerMovement()
+    private void HandleTouchInput()
     {
-        if (_playerCamera == null) return;
+        if (Touchscreen.current == null) return;
 
-        Ray ray = _playerCamera.ScreenPointToRay(PointerPosition);
+        var touch = Touchscreen.current.primaryTouch;
+        Vector2 currentTouchPos = touch.position.ReadValue();
 
-        Plane gameplayPlane = new Plane(Vector3.back, transform.position);
-
-        if (gameplayPlane.Raycast(ray, out float enterDistance))
+        if (touch.press.isPressed)
         {
-            Vector3 worldPoint = ray.GetPoint(enterDistance);
+            IsPressing = true;
 
-            Vector2 rawDirection = (Vector2)worldPoint - _rb.position;
-
-            if (rawDirection.magnitude > 0.5f)
+            if (!_isTouching)
             {
-                MoveDirection = rawDirection.normalized;
+                _touchStartPosition = currentTouchPos;
+                _touchStartTime = Time.time;
+                _isTouching = true;
+                PointerPosition = currentTouchPos;
             }
             else
             {
-                MoveDirection = Vector2.zero;
-            }
+                PointerPosition = currentTouchPos;
+                Vector2 moveVector = currentTouchPos - _touchStartPosition;
 
-            Debug.DrawLine(transform.position, worldPoint, Color.red);
+                if (moveVector.magnitude > minMoveDistance)
+                {
+                    MoveDirection = moveVector.normalized;
+                    OnMoveInput?.Invoke(MoveDirection);
+                }
+                else
+                {
+                    MoveDirection = Vector2.zero;
+                    OnMoveInput?.Invoke(Vector2.zero);
+                }
+            }
         }
+        else if (_isTouching)
+        {
+            IsPressing = false;
+            _isTouching = false;
+
+            MoveDirection = Vector2.zero;
+            OnMoveInput?.Invoke(Vector2.zero);
+
+            float timeElapsed = Time.time - _touchStartTime;
+            Vector2 swipeVector = currentTouchPos - _touchStartPosition;
+
+            if (swipeVector.magnitude > minSwipeDistance && timeElapsed <= maxDashTime)
+            {
+                OnDashPressed?.Invoke(swipeVector.normalized);
+                Debug.Log($"🔥 SWIPE DASH! Distancia: {swipeVector.magnitude:F1}px, Tiempo: {timeElapsed:F2}s");
+            }
+        }
+    }
+
+    public Vector2 GetCurrentMoveDirection()
+    {
+        return MoveDirection.normalized;
     }
 }

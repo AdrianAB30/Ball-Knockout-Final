@@ -1,96 +1,83 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 using Unity.Netcode;
 
-[RequireComponent(typeof(Rigidbody2D))]
-[RequireComponent(typeof(PlayerInputHandler))]
 public class DashController : NetworkBehaviour
 {
-    [Header("Configuración")]
-    [SerializeField] private GameConfigurationSO gameConfig;
-    [SerializeField] private float dashForce = 25f;
-    [SerializeField] private float dashCooldown = 1.0f; 
+    [SerializeField] private float dashCooldown = 1.0f;
+    [SerializeField] private float dashPushForce = 10f;
+    [SerializeField] private float pushDuration = 0.2f;
 
-    [Header("Sensibilidad del Dedo")]
-    [SerializeField] private float flickThreshold = 2000f; 
-
-    private Rigidbody2D _rb;
+    private MovementController _movement;
     private PlayerInputHandler _input;
-    private float _lastDashTime;
-
-    private Vector2 _lastPointerPos;
-    private float _lastTime;
+    private bool _canDash = true;
 
     private void Awake()
     {
-        _rb = GetComponent<Rigidbody2D>();
+        _movement = GetComponent<MovementController>();
         _input = GetComponent<PlayerInputHandler>();
     }
 
-    private void Update()
+    private void OnEnable() => _input.OnDashPressed += HandleDashPressed;
+    private void OnDisable() => _input.OnDashPressed -= HandleDashPressed;
+
+    private void HandleDashPressed(Vector2 direction)
     {
-        if (gameConfig != null && gameConfig.CurrentGameMode == GameModeType.OnlineMultiplayer && !IsOwner) return;
-
-        if (Time.time < _lastDashTime + dashCooldown) return;
-
-        bool shouldDash = false;
-        Vector2 dashDirection = Vector2.zero;
-
-        if (_input.DashPressedThisFrame)
+        // CAMBIO CLAVE: Permitimos dash en Local (IsSpawned false) o si somos dueños
+        if (_canDash && (!IsSpawned || IsOwner))
         {
-            shouldDash = true;
-            dashDirection = _input.MoveDirection.normalized;
-            if (dashDirection == Vector2.zero) shouldDash = false;
-        }
-
-        if (_input.IsPressing && (_input.CurrentScheme == "Touch" || _input.CurrentScheme == "KeyboardLeft"))
-        {
-            float deltaTime = Time.time - _lastTime;
-            if (deltaTime > 0)
-            {
-                Vector2 pointerVelocity = (_input.PointerPosition - _lastPointerPos) / deltaTime;
-
-                if (pointerVelocity.magnitude > flickThreshold)
-                {
-                    shouldDash = true;
-                    dashDirection = pointerVelocity.normalized; 
-                }
-            }
-        }
-
-        _lastPointerPos = _input.PointerPosition;
-        _lastTime = Time.time;
-
-        if (shouldDash)
-        {
-            TriggerDash(dashDirection);
+            _movement.PerformDash(direction);
+            StartCoroutine(DashCooldownCoroutine());
         }
     }
 
-    private void TriggerDash(Vector2 direction)
+    private IEnumerator DashCooldownCoroutine()
     {
-        _lastDashTime = Time.time;
+        _canDash = false;
+        yield return new WaitForSeconds(dashCooldown);
+        _canDash = true;
+    }
 
-        if (gameConfig != null && gameConfig.CurrentGameMode == GameModeType.OnlineMultiplayer)
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        // 1. Filtros de seguridad
+        if (IsSpawned && !IsOwner) return; // Si es online y no soy yo, ignoro
+        if (!_movement.IsDashing) return;  // Solo empujo si estoy haciendo dash
+        if (!collision.gameObject.CompareTag("Player")) return;
+
+        MovementController enemy = collision.gameObject.GetComponent<MovementController>();
+        if (enemy != null && !enemy.IsBeingPushed)
         {
-            RequestDashServerRpc(direction); 
-        }
-        else
-        {
-            ApplyDashForce(direction); 
+            Vector2 pushDir = (collision.transform.position - transform.position).normalized;
+
+            // 2. LÓGICA HÍBRIDA
+            if (IsSpawned)
+            {
+                // MODO ONLINE: Usamos RPC
+                NetworkObject enemyNet = collision.gameObject.GetComponent<NetworkObject>();
+                if (enemyNet != null)
+                {
+                    RequestPushEnemyServerRpc(enemyNet.NetworkObjectId, pushDir);
+                }
+            }
+            else
+            {
+                // MODO LOCAL: Empujamos directamente
+                enemy.GetPushed(pushDir, dashPushForce, pushDuration);
+            }
         }
     }
 
     [ServerRpc]
-    private void RequestDashServerRpc(Vector2 direction)
+    private void RequestPushEnemyServerRpc(ulong enemyId, Vector2 direction)
     {
-        ApplyDashForce(direction);
-        // PlayDashEffectsClientRpc(); // Efectos visuales
-    }
-
-    private void ApplyDashForce(Vector2 dir)
-    {
-        _rb.linearVelocity = Vector2.zero; 
-        _rb.AddForce(dir * dashForce, ForceMode2D.Impulse);
-        Debug.Log("🔥 FLICK DASH!");
+        if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(enemyId, out NetworkObject enemyObj))
+        {
+            var enemyMove = enemyObj.GetComponent<MovementController>();
+            if (enemyMove != null)
+            {
+                enemyMove.ApplyPushClientRpc(direction, dashPushForce, pushDuration);
+            }
+        }
     }
 }
