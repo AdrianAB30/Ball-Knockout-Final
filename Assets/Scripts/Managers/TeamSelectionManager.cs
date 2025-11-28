@@ -26,28 +26,38 @@ public class TeamSelectionManager : MonoBehaviour
     [SerializeField] private Button startButton;
     [SerializeField] private string gameSceneName = "GameScene";
 
+    [Header("Destinos de Luces (Targets)")]
+    [SerializeField] private Transform targetProP1;
+    [SerializeField] private Transform targetNoobP1;
+    [SerializeField] private Transform targetProP2;
+    [SerializeField] private Transform targetNoobP2;
+
+    [Header("Controladores de Luces")]
+    [SerializeField] private TeamLightController lightProController; 
+    [SerializeField] private TeamLightController lightNoobController;
+
     [Header("Player Prefab")]
     [SerializeField] private GameObject playerPrefab;
 
     private List<TeamCursorController> _cursors = new List<TeamCursorController>();
     private bool _player2Joined = false;
 
+    private int _p1Team = 0;
+    private int _p2Team = 0;
+
     private void Start()
     {
         if (matchData != null) matchData.ResetData();
         if (startButton) startButton.interactable = false;
 
-        if (proP1 == null || proP2 == null)
-            Debug.LogError("¡CUIDADO! Faltan asignar los Slots en el Inspector del TeamSelectionManager.");
-
         if (playerPrefab == null)
         {
             var playerInputManager = FindFirstObjectByType<PlayerInputManager>();
-            if (playerInputManager != null)
-            {
-                playerPrefab = playerInputManager.playerPrefab;
-            }
+            if (playerInputManager != null) playerPrefab = playerInputManager.playerPrefab;
         }
+
+        if (lightProController != null) lightProController.ReturnToStart();
+        if (lightNoobController != null) lightNoobController.ReturnToStart();
     }
 
     private void Update()
@@ -63,28 +73,16 @@ public class TeamSelectionManager : MonoBehaviour
 
     private void SpawnPlayer2WithArrowKeys()
     {
-        if (playerPrefab == null)
-        {
-            Debug.LogError("No hay playerPrefab asignado");
-            return;
-        }
-
-        Keyboard keyboard = Keyboard.current;
-        if (keyboard == null)
-        {
-            Debug.LogError("No hay teclado disponible");
-            return;
-        }
+        if (playerPrefab == null || Keyboard.current == null) return;
 
         var playerInput = PlayerInput.Instantiate(
             playerPrefab,
             controlScheme: "KeyboardRight",
-            pairWithDevice: keyboard
+            pairWithDevice: Keyboard.current
         );
 
         _player2Joined = true;
-
-        Debug.Log("Player 2 se unió con KeyboardRight (Flechitas)");
+        Debug.Log("Player 2 se unió con KeyboardRight");
     }
 
     public void OnPlayerJoined(PlayerInput input)
@@ -96,25 +94,22 @@ public class TeamSelectionManager : MonoBehaviour
         cursor.Setup(this, playerIndex);
 
         Transform startPos = (playerIndex == 0) ? centerP1 : centerP2;
-
         if (startPos != null)
         {
             input.transform.SetParent(startPos, false);
             input.transform.localPosition = Vector3.zero;
         }
-
-        Debug.Log($"Player {playerIndex + 1} se unió - Esquema: {input.currentControlScheme}");
     }
 
     public Transform GetTargetSlot(int playerIndex, int teamId)
     {
-        if (playerIndex == 0)
+        if (playerIndex == 0) 
         {
             if (teamId == 0) return centerP1;
             if (teamId == 1) return proP1;
             if (teamId == 2) return noobP1;
         }
-        else
+        else 
         {
             if (teamId == 0) return centerP2;
             if (teamId == 1) return proP2;
@@ -122,7 +117,34 @@ public class TeamSelectionManager : MonoBehaviour
         }
         return null;
     }
+    public void UpdatePlayerLight(int playerIndex, int newTeamId)
+    {
+        if (playerIndex == 0) _p1Team = newTeamId;
+        else if (playerIndex == 1) _p2Team = newTeamId;
 
+        UpdateTeamLightState(lightProController, 1, targetProP1, targetProP2);
+
+        UpdateTeamLightState(lightNoobController, 2, targetNoobP1, targetNoobP2);
+    }
+
+    private void UpdateTeamLightState(TeamLightController lightCtrl, int targetTeamId, Transform targetP1, Transform targetP2)
+    {
+        if (lightCtrl == null) return;
+
+        bool p1IsIn = (_p1Team == targetTeamId);
+        bool p2IsIn = (_p2Team == targetTeamId);
+
+        if (!p1IsIn && !p2IsIn)
+        {
+            lightCtrl.ReturnToStart();
+        }
+        else
+        {
+            Transform target = p1IsIn ? targetP1 : targetP2;
+
+            lightCtrl.MoveToTarget(target);
+        }
+    }
     public void CheckReadyState()
     {
         int teamProCount = 0;
@@ -135,52 +157,27 @@ public class TeamSelectionManager : MonoBehaviour
         }
 
         bool canStart = (teamProCount == 1 && teamNoobCount == 1);
-
         if (startButton) startButton.interactable = canStart;
     }
 
     public void AttemptStartGame()
     {
-        if (proP1 == null || noobP1 == null || proP2 == null || noobP2 == null)
-        {
-            Debug.LogError("ERROR CRÍTICO: No se puede iniciar. Faltan asignar referencias (Transforms) en el Inspector.");
-            return;
-        }
-
-        int teamProCount = 0;
-        int teamNoobCount = 0;
-
-        foreach (var cursor in _cursors)
-        {
-            if (cursor.CurrentTeam == 1) teamProCount++;
-            if (cursor.CurrentTeam == 2) teamNoobCount++;
-        }
-
-        if (teamProCount == 1 && teamNoobCount == 1)
+        CheckReadyState(); 
+        if (startButton != null && startButton.interactable)
         {
             StartGame();
-        }
-        else
-        {
-            Debug.Log("Aún no están listos para empezar (Falta gente o equipos incorrectos).");
         }
     }
 
     private void StartGame()
     {
-        if (matchData == null)
+        if (matchData == null || gameConfig == null)
         {
-            Debug.LogError("Falta asignar el ScriptableObject 'MatchData' en el Inspector.");
+            Debug.LogError("Faltan asignar SOs en el Inspector.");
             return;
         }
-        if (gameConfig != null)
-        {
-            gameConfig.SetLocalMode();
-        }
-        else
-        {
-            Debug.LogError("¡Falta asignar GameConfigurationSO en TeamSelectionManager!");
-        }
+
+        gameConfig.SetLocalMode();
 
         foreach (var cursor in _cursors)
         {
@@ -191,6 +188,5 @@ public class TeamSelectionManager : MonoBehaviour
         }
 
         SceneManager.LoadScene(gameSceneName);
-        Debug.Log("Iniciando Modo Local");
     }
 }

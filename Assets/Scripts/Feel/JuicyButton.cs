@@ -31,6 +31,7 @@ public class JuicyButton : MonoBehaviour, IPointerDownHandler, IPointerEnterHand
     {
         if (NotInteractable()) return;
         if (uiAnimations != null) uiAnimations.AnimateHoverEnter(gameObject, originalScale);
+        if (AudioManager.Instance) AudioManager.Instance.PlayHover();
     }
 
     public void OnPointerExit(PointerEventData eventData)

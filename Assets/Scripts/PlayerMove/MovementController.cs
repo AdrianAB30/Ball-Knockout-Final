@@ -31,7 +31,6 @@ public class MovementController : NetworkBehaviour
     {
         _rb = GetComponent<Rigidbody2D>();
         _input = GetComponent<PlayerInputHandler>();
-        // ... (Tu configuración de Rigidbody existente) ...
         _rb.gravityScale = 0; 
     }
 
@@ -45,9 +44,7 @@ public class MovementController : NetworkBehaviour
 
     private void FixedUpdate()
     {
-        // CAMBIO CLAVE: 
-        // Si está conectado a la red (IsSpawned) Y NO es mío, no lo muevo.
-        // Si es Local (IsSpawned es false), SI lo muevo.
+       
         if (IsSpawned && !IsOwner) return;
 
         Move();
@@ -71,16 +68,12 @@ public class MovementController : NetworkBehaviour
         StartCoroutine(DashCoroutine());
     }
 
-    // --- SISTEMA DE EMPUJE (HÍBRIDO) ---
-
-    // 1. Método para recibir la orden desde el servidor (Solo Online)
     [ClientRpc]
     public void ApplyPushClientRpc(Vector2 direction, float force, float duration)
     {
         if (IsOwner) GetPushed(direction, force, duration);
     }
 
-    // 2. Método local que aplica la fuerza
     public void GetPushed(Vector2 direction, float force, float duration)
     {
         if (_isBeingPushed) return;

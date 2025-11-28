@@ -69,6 +69,7 @@ public class TeamCursorController : MonoBehaviour
             transform.localPosition = Vector3.zero;
             CurrentTeam = newTeam;
 
+            _manager.UpdatePlayerLight(PlayerIndex, newTeam);
             _manager.CheckReadyState();
         }
     }

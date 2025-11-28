@@ -23,7 +23,6 @@ public class DashController : NetworkBehaviour
 
     private void HandleDashPressed(Vector2 direction)
     {
-        // CAMBIO CLAVE: Permitimos dash en Local (IsSpawned false) o si somos dueños
         if (_canDash && (!IsSpawned || IsOwner))
         {
             _movement.PerformDash(direction);
@@ -50,10 +49,8 @@ public class DashController : NetworkBehaviour
         {
             Vector2 pushDir = (collision.transform.position - transform.position).normalized;
 
-            // 2. LÓGICA HÍBRIDA
             if (IsSpawned)
             {
-                // MODO ONLINE: Usamos RPC
                 NetworkObject enemyNet = collision.gameObject.GetComponent<NetworkObject>();
                 if (enemyNet != null)
                 {
@@ -62,7 +59,6 @@ public class DashController : NetworkBehaviour
             }
             else
             {
-                // MODO LOCAL: Empujamos directamente
                 enemy.GetPushed(pushDir, dashPushForce, pushDuration);
             }
         }

@@ -5,7 +5,7 @@ using System;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 
-public class GameManager : MonoBehaviour
+public class GameManager : PersistentSingleton<GameManager>
 {
     [Header("UI References")]
     [SerializeField] private TMP_Text statusText;
@@ -104,6 +104,8 @@ public class GameManager : MonoBehaviour
 
     public async void OnClick_LoginWithUnity()
     {
+        if (AudioManager.Instance) AudioManager.Instance.PlayClick();
+
         loginButtonsPanel.SetActive(false);
         statusText.text = "Logging in with Unity...";
         try
@@ -116,6 +118,8 @@ public class GameManager : MonoBehaviour
 
     public async void OnClick_LoginAsGuest()
     {
+        if (AudioManager.Instance) AudioManager.Instance.PlayClick();
+
         loginButtonsPanel.SetActive(false);
         statusText.text = "Logging in as Guest...";
         try
@@ -128,6 +132,8 @@ public class GameManager : MonoBehaviour
 
     private async void HandleLoginSuccess_Guest(PlayerInfo info)
     {
+        if (AudioManager.Instance) AudioManager.Instance.PlaySuccess();
+
         await PlayerAccountManager.Instance.OnLoginSuccess(isGuest: true);
         if (VivoxManager.Instance != null) _ = VivoxManager.Instance.LoginVivox();
         OnLoginSuccessUIUpdate();
@@ -135,6 +141,8 @@ public class GameManager : MonoBehaviour
 
     private async void HandleLoginSuccess_Unity(PlayerInfo info)
     {
+        if (AudioManager.Instance) AudioManager.Instance.PlaySuccess();
+
         await PlayerAccountManager.Instance.OnLoginSuccess(isGuest: false);
         if (VivoxManager.Instance != null) _ = VivoxManager.Instance.LoginVivox();
         OnLoginSuccessUIUpdate();
@@ -142,6 +150,8 @@ public class GameManager : MonoBehaviour
 
     private void HandleLoginFailed(Exception e)
     {
+        if (AudioManager.Instance) AudioManager.Instance.PlayError();
+
         statusText.text = "Login failed. Try again.";
         loginButtonsPanel.SetActive(true);
     }
@@ -164,12 +174,13 @@ public class GameManager : MonoBehaviour
 
     private void HandlePanelToggle(GameObject panel)
     {
-        bool isOpening = !panel.activeSelf; 
+        bool isOpening = !panel.activeSelf;
 
         if (isOpening)
         {
-            panel.SetActive(true);
+            if (AudioManager.Instance) AudioManager.Instance.PlayPanelOpen();
 
+            panel.SetActive(true);
             SetMainMenuVisuals(false);
 
             if (panel == panelChangeName)
@@ -181,10 +192,12 @@ public class GameManager : MonoBehaviour
         {
             SetMainMenuVisuals(true);
 
+            if (AudioManager.Instance) AudioManager.Instance.PlayPanelClose();
+
             JuicyPanel juicy = panel.GetComponent<JuicyPanel>();
             if (juicy != null)
             {
-                juicy.ClosePanel(); 
+                juicy.ClosePanel();
             }
             else
             {

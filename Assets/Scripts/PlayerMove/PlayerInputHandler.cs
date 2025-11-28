@@ -5,14 +5,11 @@ using System;
 
 public class PlayerInputHandler : NetworkBehaviour
 {
-    // Eventos
     public event Action<Vector2> OnMoveInput;
     public event Action<Vector2> OnDashPressed;
 
     [Header("Configuración")]
     [SerializeField] private GameConfigurationSO gameConfig;
-    // ❌ ELIMINAR ESTA LÍNEA
-    // [SerializeField] private Camera _playerCamera;
 
     [Header("Configuración de Swipe (Móvil)")]
     [Tooltip("La distancia mínima en píxeles para registrar un swipe.")]
@@ -32,7 +29,6 @@ public class PlayerInputHandler : NetworkBehaviour
     public bool IsPressing { get; private set; }
     public string CurrentScheme { get; private set; }
 
-    // Variables para touch/swipe
     private Vector2 _touchStartPosition;
     private float _touchStartTime;
     private bool _isTouching = false;
@@ -50,15 +46,6 @@ public class PlayerInputHandler : NetworkBehaviour
             enabled = false;
             return;
         }
-
-        // ❌ ELIMINAR TODO ESTE BLOQUE DE CÁMARA
-        /*
-        if (_playerCamera == null)
-        {
-            var cam = GetComponentInChildren<Camera>();
-            _playerCamera = cam != null ? cam : Camera.main;
-        }
-        */
     }
 
     private bool ValidateInput()
