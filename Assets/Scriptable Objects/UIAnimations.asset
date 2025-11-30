@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee2ed0543d7d1f94cb66f67a3eaf3c3a, type: 3}
+  m_Name: UIAnimations
+  m_EditorClassIdentifier: 
+  punchStrength: 0.2
+  punchDuration: 0.15
+  vibrato: 10
+  elasticity: 1
+  hoverScaleFactor: 1.1
+  hoverDuration: 0.1
+  textScaleFactor: 1.2
+  textDuration: 0.05
+  panelOpenDuration: 0.4
+  panelOpenEase: 27
+  startScaleMultiplier: 0.5
+  panelCloseDuration: 0.3
+  panelCloseEase: 26

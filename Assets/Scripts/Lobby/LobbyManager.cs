@@ -40,9 +40,11 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
     public static event Action OnReadyToggleFailed;
     public static event Action OnKickPlayerFailed;
 
-    private float _heartbeatTimer;
     [SerializeField] public RelayServiceManager _relayManager;
+    [SerializeField] private GameConfigurationSO gameConfig;
+
     private ILobbyEvents _lobbyEvents;
+    private float _heartbeatTimer;
 
     protected override void Awake()
     {
@@ -381,10 +383,19 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
         if (HostLobby == null) return;
         try
         {
+            if (gameConfig != null) gameConfig.SetOnlineMode();
+
             await LobbyService.Instance.UpdateLobbyAsync(HostLobby.Id, new UpdateLobbyOptions { IsLocked = true });
             Debug.Log("Host is starting the game!");
-            NetworkManager.Singleton.SceneManager.LoadScene("GameScene",
-                UnityEngine.SceneManagement.LoadSceneMode.Single);
+
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
+            {
+                NetworkManager.Singleton.SceneManager.LoadScene("GameScene", UnityEngine.SceneManagement.LoadSceneMode.Single);
+            }
+            else
+            {
+                Debug.LogError("NetworkManager no está listo para cambiar de escena.");
+            }
         }
         catch (System.Exception e) { Debug.LogError($"Failed to start game: {e}"); }
     }
