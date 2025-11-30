@@ -528,7 +528,7 @@ Rigidbody2D:
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
   m_Mass: 1
-  m_LinearDamping: 2
+  m_LinearDamping: 2.5
   m_AngularDamping: 0.05
   m_GravityScale: 0
   m_Material: {fileID: 6200000, guid: 2c3f521effb4c4641820cd365cd3796c, type: 2}
@@ -593,8 +593,8 @@ CircleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_Radius: 0.5
+  m_Offset: {x: 0.00000029802322, y: -0.019670129}
+  m_Radius: 1.8179199
 --- !u!114 &5539082466814128244
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -657,10 +657,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8019ee8d880ea7841815f510133d1790, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  ballRenderer: {fileID: 609038139924009881}
   playerLabel: {fileID: 3519738462115696807}
   infoCanvas: {fileID: 1257973565547496989}
+  teamProSprite: {fileID: 21300000, guid: 86d11711a7b55654d985a5416a978717, type: 3}
+  teamNoobSprite: {fileID: -1161553340100603586, guid: 73d11c376d080bd4b95fd3e28b9a486a, type: 3}
   teamProColor: {r: 1, g: 0, b: 0, a: 1}
   teamNoobColor: {r: 0, g: 0, b: 1, a: 1}
+  NetTeamId:
+    m_InternalValue: 1
+  NetPlayerNumber:
+    m_InternalValue: 1
 --- !u!114 &22403778818303742
 MonoBehaviour:
   m_ObjectHideFlags: 0

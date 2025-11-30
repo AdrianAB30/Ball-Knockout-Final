@@ -36,6 +36,8 @@ public class GameSetupManager : MonoBehaviour
             if (menuCam != null) menuCam.gameObject.SetActive(false);
         }
 
+        if (Camera.main != null) Camera.main.gameObject.SetActive(true);
+
         if (gameConfig == null) return;
 
         switch (gameConfig.CurrentGameMode)
@@ -74,10 +76,18 @@ public class GameSetupManager : MonoBehaviour
     private void SpawnOnlinePlayer(ulong clientId)
     {
         Transform spawnPoint = (clientId == 0) ? spawnPointP1 : spawnPointP2;
-        Vector3 spawnPos = new Vector3(spawnPoint.position.x, spawnPoint.position.y, 0);
 
-        GameObject p = Instantiate(playerPrefab, spawnPos, Quaternion.identity);
-        p.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId);
+        GameObject playerInstance = Instantiate(playerPrefab, spawnPoint.position, spawnPoint.rotation);
+        playerInstance.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId);
+
+        var visuals = playerInstance.GetComponent<PlayerVisuals>();
+        if (visuals != null)
+        {
+            int pNum = (clientId == 0) ? 1 : 2;
+            int tId = (clientId == 0) ? 1 : 2;
+
+            visuals.SetNetworkInfo(pNum, tId);
+        }
     }
 
     private void OnDestroy()
@@ -89,7 +99,7 @@ public class GameSetupManager : MonoBehaviour
     // --- MODO LOCAL ---
     private void StartLocalSession()
     {
-        Debug.Log("Iniciando Modo Local Correcto...");
+        Debug.Log("Iniciando Modo Local...");
 
         if (NetworkManager.Singleton != null) NetworkManager.Singleton.Shutdown();
 
@@ -99,10 +109,6 @@ public class GameSetupManager : MonoBehaviour
             {
                 SpawnLocalPlayer(playerData);
             }
-        }
-        else
-        {
-            Debug.LogError("No has asignado el LocalMatchConfigurationSO");
         }
     }
 
@@ -129,52 +135,23 @@ public class GameSetupManager : MonoBehaviour
         p.transform.position = spawnPoint.position;
         p.transform.rotation = spawnPoint.rotation;
 
-        SetupLocalPlayerComponents(p.gameObject, playerNumber);
+        SetupLocalPlayerComponents(p.gameObject);
 
+        // 5. VISUALES (Color y Texto)
         var visuals = p.GetComponent<PlayerVisuals>();
         if (visuals != null)
         {
-            visuals.SetPlayerInfo(playerNumber, data.TeamId);
-        }
-    }
-    private void SpawnLocalPlayer(InputDevice device, int teamId, int playerNumber)
-    {
-        Transform spawnPoint = (teamId == 1) ? spawnPointP1 : spawnPointP2;
-
-        string schemeToUse = null;
-        if (device is Keyboard)
-            schemeToUse = (playerNumber == 1) ? "KeyboardLeft" : "KeyboardRight";
-        else if (device is Gamepad) schemeToUse = "Gamepad";
-        else if (device is Touchscreen) schemeToUse = "Touch";
-
-        var p = PlayerInput.Instantiate(
-            playerPrefab,
-            controlScheme: schemeToUse,
-            pairWithDevice: device
-        );
-
-        p.transform.position = spawnPoint.position;
-        p.transform.rotation = spawnPoint.rotation;
-
-        SetupLocalPlayerComponents(p.gameObject, playerNumber);
-
-        var visuals = p.GetComponent<PlayerVisuals>();
-        if (visuals != null)
-        {
-            visuals.SetPlayerInfo(playerNumber, teamId);
+            visuals.SetLocalInfo(playerNumber, data.TeamId);
         }
     }
 
-    private void SetupLocalPlayerComponents(GameObject playerObj, int playerIndex)
+    private void SetupLocalPlayerComponents(GameObject playerObj)
     {
+        Destroy(playerObj.GetComponent<NetworkObject>());
         var netRb = playerObj.GetComponent<Unity.Netcode.Components.NetworkRigidbody2D>();
         if (netRb != null) Destroy(netRb);
-
         var netTransform = playerObj.GetComponent<Unity.Netcode.Components.NetworkTransform>();
         if (netTransform != null) Destroy(netTransform);
-
-        var netObj = playerObj.GetComponent<NetworkObject>();
-        if (netObj != null) Destroy(netObj);
 
         Camera[] internalCameras = playerObj.GetComponentsInChildren<Camera>();
         foreach (var c in internalCameras) Destroy(c.gameObject);
