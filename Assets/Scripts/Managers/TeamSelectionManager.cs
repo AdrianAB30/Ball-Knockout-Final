@@ -183,7 +183,7 @@ public class TeamSelectionManager : MonoBehaviour
         {
             if (cursor.CurrentTeam != 0)
             {
-                matchData.AddPlayerToTeam(cursor.Device, cursor.CurrentTeam);
+                matchData.AddPlayer(cursor.Device, cursor.PlayerIndex, cursor.CurrentTeam);
             }
         }
 

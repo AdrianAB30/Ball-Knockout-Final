@@ -15,4 +15,8 @@ public class UIAudioLibrary : ScriptableObject
     [Header("Sistema")]
     public AudioClip error;
     public AudioClip success;
+
+    [Header("Música")]
+    public AudioClip menuMusic;   
+    public AudioClip battleMusic;
 }

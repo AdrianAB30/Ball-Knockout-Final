@@ -51,6 +51,8 @@ public class GameManager : PersistentSingleton<GameManager>
 
     private async void Start()
     {
+        if (AudioManager.Instance) AudioManager.Instance.PlayMenuMusic();
+
         loginButtonsPanel.SetActive(false);
         statusText.text = "Initializing Services...";
 
@@ -94,6 +96,7 @@ public class GameManager : PersistentSingleton<GameManager>
 
         statusText.text = "Ready to login";
         loginButtonsPanel.SetActive(true);
+
     }
 
     public void OnProfileUpdated(UserProfileData data)

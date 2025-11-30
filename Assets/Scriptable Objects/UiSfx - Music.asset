@@ -10,12 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 745e48c5cf6729845bfc41af8374f1f9, type: 3}
-  m_Name: UiSfx
+  m_Name: UiSfx - Music
   m_EditorClassIdentifier: 
-  clickNormal: {fileID: 8300000, guid: 1de91444840b8dd4b887283d39e8c33c, type: 3}
+  clickNormal: {fileID: 8300000, guid: 3298b7dce9128e64497fe7946da82332, type: 3}
   clickBack: {fileID: 0}
-  hover: {fileID: 8300000, guid: b1293bd7ba7e6bf4391a28ca863cc5a6, type: 3}
-  panelOpen: {fileID: 8300000, guid: d8b9f5c3553ab2f4b869ef733f2a5879, type: 3}
-  panelClose: {fileID: 8300000, guid: 93e673ec18f74b849aa9466b1fcb78e5, type: 3}
+  hover: {fileID: 8300000, guid: 77362c6b3cd1903478696263d2699400, type: 3}
+  panelOpen: {fileID: 8300000, guid: a70ed8fbbfdbe154b9f8d2fca24211d7, type: 3}
+  panelClose: {fileID: 8300000, guid: 8248fd6530e530e4780b6f5d4e14472b, type: 3}
   error: {fileID: 8300000, guid: 65b26e4f3e69aaa4d81b489d56123e23, type: 3}
   success: {fileID: 8300000, guid: 0d6ac62f0f13165478b3e6bcd75961d0, type: 3}
+  menuMusic: {fileID: 8300000, guid: ff23487946f0eaf4a89c6536092e08a3, type: 3}
+  battleMusic: {fileID: 8300000, guid: 637feb2285e6cbc419896dde9e890366, type: 3}

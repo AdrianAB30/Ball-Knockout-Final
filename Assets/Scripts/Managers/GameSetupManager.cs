@@ -11,15 +11,18 @@ public class GameSetupManager : MonoBehaviour
     [Header("Spawns")]
     [SerializeField] private Transform spawnPointP1;
     [SerializeField] private Transform spawnPointP2;
+    private int _spawnedPlayerCount = 0;
 
     [Header("Data")]
     [SerializeField] private LocalMatchConfigurationSO localMatchData;
 
-    [Header("Cámara Compartida (Local)")]
-    [SerializeField] private Camera sharedCamera;
-
     private void Start()
     {
+        if (AudioManager.Instance)
+        {
+            AudioManager.Instance.PlayBattleMusic();
+        }
+
         var gameManager = Object.FindFirstObjectByType<GameManager>(); 
         if (gameManager != null)
         {
@@ -86,71 +89,83 @@ public class GameSetupManager : MonoBehaviour
     // --- MODO LOCAL ---
     private void StartLocalSession()
     {
-        if (NetworkManager.Singleton != null) 
-            NetworkManager.Singleton.Shutdown();
+        Debug.Log("Iniciando Modo Local Correcto...");
 
-        if (sharedCamera == null)
-        {
-            GameObject mainCamObj = GameObject.FindGameObjectWithTag("MainCamera");
-            if (mainCamObj != null)
-            {
-                sharedCamera = mainCamObj.GetComponent<Camera>();
-            }
-        }
-
-        if (sharedCamera != null)
-        {
-            sharedCamera.gameObject.SetActive(true);
-        }
+        if (NetworkManager.Singleton != null) NetworkManager.Singleton.Shutdown();
 
         if (localMatchData != null)
         {
-            foreach (var device in localMatchData.Team1Devices)
+            foreach (var playerData in localMatchData.Players)
             {
-                SpawnLocalPlayer(device, 1);
+                SpawnLocalPlayer(playerData);
             }
-
-            foreach (var device in localMatchData.Team2Devices)
-            {
-                SpawnLocalPlayer(device, 2);
-            }
+        }
+        else
+        {
+            Debug.LogError("No has asignado el LocalMatchConfigurationSO");
         }
     }
 
-    private void SpawnLocalPlayer(InputDevice device, int teamId)
+    private void SpawnLocalPlayer(LocalPlayerData data)
+    {
+        Transform spawnPoint = (data.TeamId == 1) ? spawnPointP1 : spawnPointP2;
+
+        int playerNumber = data.PlayerIndex + 1;
+
+        string schemeToUse = null;
+        if (data.Device is Keyboard)
+            schemeToUse = (playerNumber == 1) ? "KeyboardLeft" : "KeyboardRight";
+        else if (data.Device is Gamepad)
+            schemeToUse = "Gamepad";
+        else if (data.Device is Touchscreen)
+            schemeToUse = "Touch";
+
+        var p = PlayerInput.Instantiate(
+            playerPrefab,
+            controlScheme: schemeToUse,
+            pairWithDevice: data.Device
+        );
+
+        p.transform.position = spawnPoint.position;
+        p.transform.rotation = spawnPoint.rotation;
+
+        SetupLocalPlayerComponents(p.gameObject, playerNumber);
+
+        var visuals = p.GetComponent<PlayerVisuals>();
+        if (visuals != null)
+        {
+            visuals.SetPlayerInfo(playerNumber, data.TeamId);
+        }
+    }
+    private void SpawnLocalPlayer(InputDevice device, int teamId, int playerNumber)
     {
         Transform spawnPoint = (teamId == 1) ? spawnPointP1 : spawnPointP2;
 
         string schemeToUse = null;
-
         if (device is Keyboard)
-        {
-            schemeToUse = (teamId == 1) ? "KeyboardLeft" : "KeyboardRight";
-        }
-        else if (device is Gamepad)
-        {
-            schemeToUse = "Gamepad";
-        }
-        else if (device is Touchscreen)
-        {
-            schemeToUse = "Touch";
-        }
+            schemeToUse = (playerNumber == 1) ? "KeyboardLeft" : "KeyboardRight";
+        else if (device is Gamepad) schemeToUse = "Gamepad";
+        else if (device is Touchscreen) schemeToUse = "Touch";
 
-        var playerInput = PlayerInput.Instantiate(
+        var p = PlayerInput.Instantiate(
             playerPrefab,
-            controlScheme: schemeToUse, 
+            controlScheme: schemeToUse,
             pairWithDevice: device
         );
 
-        Vector3 correctPosition = new Vector3(spawnPoint.position.x, spawnPoint.position.y, 0);
-        playerInput.transform.position = correctPosition;
-        playerInput.transform.rotation = Quaternion.identity;
-        playerInput.transform.SetParent(null);
+        p.transform.position = spawnPoint.position;
+        p.transform.rotation = spawnPoint.rotation;
 
-        SetupLocalPlayerComponents(playerInput.gameObject, teamId);
+        SetupLocalPlayerComponents(p.gameObject, playerNumber);
+
+        var visuals = p.GetComponent<PlayerVisuals>();
+        if (visuals != null)
+        {
+            visuals.SetPlayerInfo(playerNumber, teamId);
+        }
     }
 
-    private void SetupLocalPlayerComponents(GameObject playerObj, int teamId)
+    private void SetupLocalPlayerComponents(GameObject playerObj, int playerIndex)
     {
         var netRb = playerObj.GetComponent<Unity.Netcode.Components.NetworkRigidbody2D>();
         if (netRb != null) Destroy(netRb);
@@ -161,28 +176,17 @@ public class GameSetupManager : MonoBehaviour
         var netObj = playerObj.GetComponent<NetworkObject>();
         if (netObj != null) Destroy(netObj);
 
-        Camera[] playerCams = playerObj.GetComponentsInChildren<Camera>();
-        foreach (Camera cam in playerCams)
-        {
-            Destroy(cam.gameObject);
-        }
+        Camera[] internalCameras = playerObj.GetComponentsInChildren<Camera>();
+        foreach (var c in internalCameras) Destroy(c.gameObject);
 
         AudioListener[] listeners = playerObj.GetComponentsInChildren<AudioListener>();
-        foreach (AudioListener listener in listeners)
-        {
-            Destroy(listener);
-        }
+        foreach (var l in listeners) Destroy(l);
 
         Rigidbody2D rb = playerObj.GetComponent<Rigidbody2D>();
         if (rb != null)
         {
-            rb.bodyType = RigidbodyType2D.Dynamic; 
+            rb.bodyType = RigidbodyType2D.Dynamic;
             rb.simulated = true;
-            rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-            rb.interpolation = RigidbodyInterpolation2D.Interpolate;
-            rb.constraints = RigidbodyConstraints2D.FreezeRotation;
         }
-
-        playerObj.layer = LayerMask.NameToLayer("Default");
     }
 }

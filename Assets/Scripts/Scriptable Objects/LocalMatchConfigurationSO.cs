@@ -1,22 +1,32 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
+using System;
+
+public class LocalPlayerData
+{
+    public InputDevice Device;
+    public int PlayerIndex;   
+    public int TeamId;        
+}
 
 [CreateAssetMenu(fileName = "LocalMatchConfig", menuName = "ScriptableObjects/Local Match Config", order = 5)]
 public class LocalMatchConfigurationSO : ScriptableObject
 {
-    [System.NonSerialized] public List<InputDevice> Team1Devices = new List<InputDevice>();
-    [System.NonSerialized] public List<InputDevice> Team2Devices = new List<InputDevice>();
+    [System.NonSerialized] public List<LocalPlayerData> Players = new List<LocalPlayerData>();
 
     public void ResetData()
     {
-        Team1Devices = new List<InputDevice>();
-        Team2Devices = new List<InputDevice>();
+        Players.Clear();
     }
 
-    public void AddPlayerToTeam(InputDevice device, int teamId)
+    public void AddPlayer(InputDevice device, int index, int teamId)
     {
-        if (teamId == 1) Team1Devices.Add(device);
-        else if (teamId == 2) Team2Devices.Add(device);
+        Players.Add(new LocalPlayerData 
+        { 
+            Device = device, 
+            PlayerIndex = index, 
+            TeamId = teamId 
+        });
     }
 }

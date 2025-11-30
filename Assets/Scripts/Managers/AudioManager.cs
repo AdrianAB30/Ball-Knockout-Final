@@ -22,6 +22,8 @@ public class AudioManager : PersistentSingleton<AudioManager>
     [SerializeField] private AudioSource[] backgroundAudios;
     [SerializeField] private float fadeDuration = 1f;
     [SerializeField] private float maxVolume = 1f;
+    private Tweener _musicTween;
+    private AudioSource _activeMusicSource;
 
     [Header("Audio Libraries (SOs)")]
     [SerializeField] private UIAudioLibrary uiLibrary;
@@ -38,16 +40,11 @@ public class AudioManager : PersistentSingleton<AudioManager>
     protected override void Awake()
     {
         base.Awake();
-        if (sfxSource == null) sfxSource = gameObject.AddComponent<AudioSource>();
     }
 
     private void Start()
     {
         LoadVolume();
-        if (backgroundAudios.Length > 0)
-        {
-            PlayNextSong();
-        }
     }
     public void PlayClick() => PlaySfx(uiLibrary.clickNormal);
     public void PlayBack() => PlaySfx(uiLibrary.clickBack);
@@ -124,22 +121,30 @@ public class AudioManager : PersistentSingleton<AudioManager>
         if (textUI != null) textUI.text = Mathf.RoundToInt(volume * 100) + "%";
     }
 
-    private void PlayNextSong()
+    public void PlayMusic(AudioClip newClip)
     {
-        if (currentIndex >= backgroundAudios.Length) currentIndex = 0;
+        if (backgroundAudios.Length == 0) return;
+        _activeMusicSource = backgroundAudios[0];
 
-        AudioSource currentAudio = backgroundAudios[currentIndex];
-        currentAudio.volume = 0;
-        currentAudio.Play();
+        if (_activeMusicSource.clip == newClip && _activeMusicSource.isPlaying) return;
 
-        currentAudio.DOFade(maxVolume, fadeDuration).OnComplete(() =>
+        _musicTween?.Kill();
+        _musicTween = _activeMusicSource.DOFade(0, fadeDuration).OnComplete(() =>
         {
-            currentAudio.DOFade(0, fadeDuration).SetDelay(currentAudio.clip.length - fadeDuration).OnComplete(() =>
-            {
-                currentAudio.Stop();
-                ++currentIndex;
-                PlayNextSong();
-            });
+            _activeMusicSource.clip = newClip;
+            _activeMusicSource.Play();
+
+            _activeMusicSource.DOFade(maxVolume, fadeDuration);
         });
+    }
+
+    public void PlayMenuMusic()
+    {
+        if (uiLibrary != null) PlayMusic(uiLibrary.menuMusic);
+    }
+
+    public void PlayBattleMusic()
+    {
+        if (uiLibrary != null) PlayMusic(uiLibrary.battleMusic);
     }
 }
