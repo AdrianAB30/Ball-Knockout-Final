@@ -9,7 +9,16 @@ public class CollisionDamage : NetworkBehaviour
 
     private float _lastHitTime;
     private float _hitCooldown = 0.5f;
+    private DashController _myDash;
 
+    private void Awake()
+    {
+        _myDash = GetComponent<DashController>();
+        if (_myDash == null)
+        {
+            Debug.LogError("CollisionDamage: ¡Falta el componente DashController en este objeto!");
+        }
+    }
     private void OnCollisionEnter2D(Collision2D collision)
     {
         if (gameConfig.CurrentGameMode == GameModeType.OnlineMultiplayer && !IsServer) return;
@@ -18,6 +27,22 @@ public class CollisionDamage : NetworkBehaviour
 
         if (collision.gameObject.CompareTag("Player"))
         {
+            var enemyDash = collision.gameObject.GetComponent<DashController>();
+            var enemyHealth = collision.gameObject.GetComponent<Health>();
+
+            if (enemyHealth == null) return;
+
+            if (enemyDash != null && enemyDash.IsDashing && !_myDash.IsDashing)
+            {
+                return;
+            }
+
+            if (_myDash.IsDashing)
+            {
+                ApplyDamage(enemyHealth, 999f); 
+                return;
+            }
+
             float impactVelocity = collision.relativeVelocity.magnitude;
 
             if (impactVelocity > minDamageVelocity)
@@ -27,16 +52,16 @@ public class CollisionDamage : NetworkBehaviour
 
                 if (myRb.linearVelocity.magnitude > otherRb.linearVelocity.magnitude)
                 {
-                    _lastHitTime = Time.time;
-
-                    var enemyHealth = collision.gameObject.GetComponent<Health>();
-                    if (enemyHealth != null)
-                    {
-                        Debug.Log($"GOLPE! Velocidad: {impactVelocity}");
-                        enemyHealth.TakeDamage();
-                    }
+                    ApplyDamage(enemyHealth, impactVelocity);
                 }
             }
         }
+    }
+    private void ApplyDamage(Health enemy, float force)
+    {
+        _lastHitTime = Time.time;
+        Debug.Log($"GOLPE EXITOSO! Fuerza: {force}");
+        enemy.TakeDamage();
+
     }
 }

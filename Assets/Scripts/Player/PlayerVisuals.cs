@@ -20,6 +20,7 @@ public class PlayerVisuals : NetworkBehaviour
     public NetworkVariable<int> NetTeamId = new NetworkVariable<int>(1);
     public NetworkVariable<int> NetPlayerNumber = new NetworkVariable<int>(1);
 
+    public int CurrentTeamId { get; private set; } = 1;
     private Camera _mainCam;
 
     private void Awake()
@@ -63,6 +64,8 @@ public class PlayerVisuals : NetworkBehaviour
 
     private void UpdateVisuals(int teamId, int playerNumber)
     {
+        CurrentTeamId = teamId;
+
         if (playerLabel != null) playerLabel.text = $"P{playerNumber}";
 
         if (teamId == 1) 
@@ -75,5 +78,7 @@ public class PlayerVisuals : NetworkBehaviour
             if (ballRenderer != null) ballRenderer.sprite = teamNoobSprite;
             if (playerLabel != null) playerLabel.color = teamNoobColor;
         }
+        var health = GetComponent<Health>();
+        if (health != null) health.SetTeamId(teamId, playerNumber);
     }
 }

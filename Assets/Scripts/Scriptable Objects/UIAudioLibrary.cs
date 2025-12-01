@@ -19,4 +19,7 @@ public class UIAudioLibrary : ScriptableObject
     [Header("Música")]
     public AudioClip menuMusic;   
     public AudioClip battleMusic;
+
+    [Header("Música")]
+    public AudioClip goSound;
 }

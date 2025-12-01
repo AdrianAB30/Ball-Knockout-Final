@@ -20,7 +20,7 @@ public class GameSetupManager : MonoBehaviour
     {
         if (AudioManager.Instance)
         {
-            AudioManager.Instance.PlayBattleMusic();
+            AudioManager.Instance.StopMusic();
         }
 
         var gameManager = Object.FindFirstObjectByType<GameManager>(); 
@@ -137,11 +137,12 @@ public class GameSetupManager : MonoBehaviour
 
         SetupLocalPlayerComponents(p.gameObject);
 
-        // 5. VISUALES (Color y Texto)
+        int playerID = playerNumber;
+
         var visuals = p.GetComponent<PlayerVisuals>();
         if (visuals != null)
         {
-            visuals.SetLocalInfo(playerNumber, data.TeamId);
+            visuals.SetLocalInfo(playerID, data.TeamId);
         }
     }
 

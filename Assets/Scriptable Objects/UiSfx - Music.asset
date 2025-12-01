@@ -21,3 +21,4 @@ MonoBehaviour:
   success: {fileID: 8300000, guid: 0d6ac62f0f13165478b3e6bcd75961d0, type: 3}
   menuMusic: {fileID: 8300000, guid: ff23487946f0eaf4a89c6536092e08a3, type: 3}
   battleMusic: {fileID: 8300000, guid: 637feb2285e6cbc419896dde9e890366, type: 3}
+  goSound: {fileID: 8300000, guid: 8f7d135377a171744ae5676fc65c4e97, type: 3}

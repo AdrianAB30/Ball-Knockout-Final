@@ -53,6 +53,7 @@ public class AudioManager : PersistentSingleton<AudioManager>
     public void PlayPanelClose() => PlaySfx(uiLibrary.panelClose);
     public void PlayError() => PlaySfx(uiLibrary.error);
     public void PlaySuccess() => PlaySfx(uiLibrary.success);
+    public void PlayCountdown() => PlaySfx(uiLibrary.goSound);
 
     public void PlayBounce() => PlayRandomSfx(gameplayLibrary.ballBounce);
     public void PlayHit() => PlayRandomSfx(gameplayLibrary.ballHitPlayer);
@@ -136,6 +137,13 @@ public class AudioManager : PersistentSingleton<AudioManager>
 
             _activeMusicSource.DOFade(maxVolume, fadeDuration);
         });
+    }
+    public void StopMusic()
+    {
+        for (int i = 0; i < backgroundAudios.Length; i++)
+        {
+            backgroundAudios[i].Stop();
+        }
     }
 
     public void PlayMenuMusic()

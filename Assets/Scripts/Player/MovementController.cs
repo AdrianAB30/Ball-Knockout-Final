@@ -14,7 +14,8 @@ public class MovementController : NetworkBehaviour
 
     private Rigidbody2D _rb;
     private PlayerInputHandler _input;
-    private bool _isDashing = false; 
+    private bool _isDashing = false;
+    private bool _isDead = true;
 
     private void Awake()
     {
@@ -43,7 +44,7 @@ public class MovementController : NetworkBehaviour
 
     private void HandleMovement()
     {
-        if (_isDashing) return;
+        if (_isDashing || _isDead) return;
 
         Vector2 moveDir = _input.MoveDirection;
 
@@ -60,12 +61,30 @@ public class MovementController : NetworkBehaviour
         {
             if (_rb.linearVelocity.magnitude > maxMoveSpeed)
             {
-                // Dejamos fluir la bola
+                // Dejo fluir la bola
             }
             else
             {
                 _rb.linearVelocity = Vector2.Lerp(_rb.linearVelocity, Vector2.zero, stopFriction * Time.fixedDeltaTime);
             }
         }
+    }
+    public void SetDead(bool state)
+    {
+        _isDead = state;
+        if (_isDead)
+        {
+            _rb.linearVelocity = Vector2.zero; 
+            _rb.angularVelocity = 0f;
+        }
+    }
+    public void TeleportTo(Vector3 position, Quaternion rotation)
+    {
+        _rb.linearVelocity = Vector2.zero; 
+        _rb.angularVelocity = 0f;
+
+        transform.position = position;
+        transform.rotation = rotation;
+
     }
 }

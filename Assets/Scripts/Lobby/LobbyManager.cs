@@ -231,6 +231,7 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
     {
         try
         {
+            if (gameConfig != null) gameConfig.SetOnlineMode();
             var joinOptions = new JoinLobbyByIdOptions { Player = GetNewPlayerData() };
             JoinedLobby = await LobbyService.Instance.JoinLobbyByIdAsync(lobbyId, joinOptions);
 
@@ -257,6 +258,7 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
     {
         try
         {
+            if (gameConfig != null) gameConfig.SetOnlineMode();
             var quickJoinOptions = new QuickJoinLobbyOptions { Player = GetNewPlayerData() };
             JoinedLobby = await LobbyService.Instance.QuickJoinLobbyAsync(quickJoinOptions);
 
@@ -284,6 +286,7 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
     {
         try
         {
+            if (gameConfig != null) gameConfig.SetOnlineMode();
             var joinOptions = new JoinLobbyByCodeOptions { Player = GetNewPlayerData() };
             JoinedLobby = await LobbyService.Instance.JoinLobbyByCodeAsync(lobbyCode, joinOptions);
 
