@@ -35,8 +35,6 @@ public class AudioManager : PersistentSingleton<AudioManager>
     [Header("Visuals")]
     [SerializeField] private UIAnimationData uiAnimations;
 
-    private int currentIndex = 0;
-
     protected override void Awake()
     {
         base.Awake();

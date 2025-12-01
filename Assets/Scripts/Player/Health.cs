@@ -15,6 +15,13 @@ public class Health : NetworkBehaviour
     [Header("Vidas (Corazones UI)")]
     [SerializeField] private int maxLives = 2;
 
+    [Header("Visuals")]
+    [SerializeField] private SpriteRenderer ballRenderer;
+    [SerializeField] private Collider2D myCollider;
+    [SerializeField] private Canvas nameCanvas;
+    [SerializeField] private Sprite[] proSprites;
+    [SerializeField] private Sprite[] noobSprites;
+
     // --- VARIABLES DE RED (Online) ---
     public NetworkVariable<int> NetLives = new NetworkVariable<int>(2);
     public NetworkVariable<int> NetDurability = new NetworkVariable<int>(3);
@@ -23,15 +30,9 @@ public class Health : NetworkBehaviour
     private int _localLives;
     private int _localDurability;
 
-    [Header("Visuals")]
-    [SerializeField] private SpriteRenderer ballRenderer;
-    [SerializeField] private Collider2D myCollider;
-    [SerializeField] private Canvas nameCanvas;
-    [SerializeField] private Sprite[] proSprites;
-    [SerializeField] private Sprite[] noobSprites;
-
     public int PlayerID { get; private set; }
     private int _currentTeamId = 1;
+    public int TeamID => _currentTeamId;
 
     public static event Action<int> OnPlayerDied;
     public static event Action<int, int> OnLivesChanged; 

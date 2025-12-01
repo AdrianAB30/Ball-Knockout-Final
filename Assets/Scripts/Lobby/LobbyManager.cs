@@ -160,6 +160,8 @@ public class LobbyManager : PersistentSingleton<LobbyManager>
     {
         try
         {
+            if (gameConfig != null) gameConfig.SetOnlineMode();
+            else Debug.LogError("LobbyManager: Falta asignar GameConfig SO");
             int myAvatarIndex = PlayerAccountManager.Instance.CurrentProfile.avatarIndex;
 
             string relayCode = await _relayManager.CreateRelay(maxPlayers);

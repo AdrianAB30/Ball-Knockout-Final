@@ -22,6 +22,7 @@ public class PlayerVisuals : NetworkBehaviour
 
     public int CurrentTeamId { get; private set; } = 1;
     private Camera _mainCam;
+    private int _localPlayerID;
 
     private void Awake()
     {
@@ -29,6 +30,19 @@ public class PlayerVisuals : NetworkBehaviour
         if (_mainCam != null && infoCanvas != null)
         {
             infoCanvas.worldCamera = _mainCam;
+        }
+    }
+    public int PlayerID
+    {
+        get
+        {
+            if (NetworkManager.Singleton.IsListening) return NetPlayerNumber.Value;
+
+            return _localPlayerID;
+        }
+        private set
+        {
+            _localPlayerID = value;
         }
     }
 
@@ -50,6 +64,7 @@ public class PlayerVisuals : NetworkBehaviour
 
     public void SetLocalInfo(int playerNumber, int teamId)
     {
+        _localPlayerID = playerNumber; 
         UpdateVisuals(teamId, playerNumber);
     }
 
@@ -57,7 +72,7 @@ public class PlayerVisuals : NetworkBehaviour
     {
         if (IsServer)
         {
-            NetPlayerNumber.Value = playerNumber;
+            NetPlayerNumber.Value = playerNumber; 
             NetTeamId.Value = teamId;
         }
     }

@@ -11,7 +11,6 @@ public class GameSetupManager : MonoBehaviour
     [Header("Spawns")]
     [SerializeField] private Transform spawnPointP1;
     [SerializeField] private Transform spawnPointP2;
-    private int _spawnedPlayerCount = 0;
 
     [Header("Data")]
     [SerializeField] private LocalMatchConfigurationSO localMatchData;

@@ -716,11 +716,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   gameConfig: {fileID: 11400000, guid: 210d8aefcfed6034f995e9c385f2bf34, type: 2}
+  respawnTime: 1
+  maxDurability: 3
   maxLives: 3
-  respawnTime: 0.5
   NetLives:
     m_InternalValue: 3
+  NetDurability:
+    m_InternalValue: 3
   ballRenderer: {fileID: 6215516505620654520}
+  myCollider: {fileID: 658300708938450429}
+  nameCanvas: {fileID: 1257973565547496989}
   proSprites:
   - {fileID: 7937814888323335101, guid: 0ea9d5c6f5423c5448dd9d4de244eb96, type: 3}
   - {fileID: -3586022940522492148, guid: 0ea9d5c6f5423c5448dd9d4de244eb96, type: 3}
@@ -731,8 +736,6 @@ MonoBehaviour:
   - {fileID: 5930023304895248040, guid: 127345dd9fd66224082a29a7cd12feb9, type: 3}
   - {fileID: -4982395184782996478, guid: 127345dd9fd66224082a29a7cd12feb9, type: 3}
   - {fileID: -7190036363608124245, guid: 127345dd9fd66224082a29a7cd12feb9, type: 3}
-  myCollider: {fileID: 658300708938450429}
-  nameCanvas: {fileID: 1257973565547496989}
 --- !u!114 &1464737433720334616
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -15,7 +15,7 @@ public class GameManager : PersistentSingleton<GameManager>
     [SerializeField] private GameObject[] playerName;
     [SerializeField] private GameObject mainMenuCanvas;
 
-    // PANELES
+    [Header("Panels")]
     [SerializeField] private GameObject panelChangeName;
     [SerializeField] private GameObject lobbyPanel;
     [SerializeField] private GameObject settingsPanel;
@@ -25,6 +25,11 @@ public class GameManager : PersistentSingleton<GameManager>
     [SerializeField] private GameObject createLobbyGroup;
     [SerializeField] private GameObject joinLobbyGroup;
     [SerializeField] private GameObject editProfileButton;
+
+    [Header("Schema Panels References")]
+    [SerializeField] private GameObject schemaGamepadPanel;
+    [SerializeField] private GameObject schemaKeyboardPanel;
+    [SerializeField] private GameObject schemaMobilePanel;
 
     [Header("Service Dependencies")]
     [SerializeField] private FadeManager fadeManager;
@@ -239,5 +244,43 @@ public class GameManager : PersistentSingleton<GameManager>
     public void ExitGame()
     {
         Application.Quit();
+    }
+    private void HandleOverlayToggle(GameObject panel)
+    {
+        bool isOpening = !panel.activeSelf;
+
+        if (isOpening)
+        {
+            if (AudioManager.Instance) AudioManager.Instance.PlayPanelOpen();
+            panel.SetActive(true);
+        }
+        else
+        {
+            if (AudioManager.Instance) AudioManager.Instance.PlayPanelClose();
+
+            JuicyPanel juicy = panel.GetComponent<JuicyPanel>();
+            if (juicy != null)
+            {
+                juicy.ClosePanel();
+            }
+            else
+            {
+                panel.SetActive(false);
+            }
+        }
+    }
+    public void ToggleSchemaGamepad()
+    {
+        HandleOverlayToggle(schemaGamepadPanel);
+    }
+
+    public void ToggleSchemaKeyboard()
+    {
+        HandleOverlayToggle(schemaKeyboardPanel);
+    }
+
+    public void ToggleSchemaMobile()
+    {
+        HandleOverlayToggle(schemaMobilePanel);
     }
 }
