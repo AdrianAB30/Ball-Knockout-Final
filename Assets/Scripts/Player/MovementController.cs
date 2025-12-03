@@ -11,6 +11,7 @@ public class MovementController : NetworkBehaviour
     [SerializeField] private float moveSpeed = 50f;
     [SerializeField] private float maxMoveSpeed = 8f;
     [SerializeField] private float stopFriction = 5f;
+    [SerializeField] private float absoluteMaxSpeed = 25f;
 
     private Rigidbody2D _rb;
     private PlayerInputHandler _input;
@@ -40,6 +41,11 @@ public class MovementController : NetworkBehaviour
         if (gameConfig != null && gameConfig.CurrentGameMode == GameModeType.OnlineMultiplayer && !IsOwner) return;
 
         HandleMovement();
+
+        if (_rb.linearVelocity.magnitude > absoluteMaxSpeed)
+        {
+            _rb.linearVelocity = Vector2.ClampMagnitude(_rb.linearVelocity, absoluteMaxSpeed);
+        }
     }
 
     private void HandleMovement()

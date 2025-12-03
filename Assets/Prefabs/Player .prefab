@@ -543,6 +543,30 @@ MonoBehaviour:
         m_CallState: 2
     m_ActionId: 3c11cf71-a562-4bc1-a13b-a3e63250aef5
     m_ActionName: 'Gameplay/PointerPress[/Mouse/leftButton]'
+  - m_PersistentCalls:
+      m_Calls: []
+    m_ActionId: e0f7c22f-eb48-43c9-993e-e79a6a409a1f
+    m_ActionName: 'UI/Navigate[/Keyboard/w,/Keyboard/s,/Keyboard/a,/Keyboard/d,/Keyboard/upArrow,/Keyboard/downArrow,/Keyboard/leftArrow,/Keyboard/rightArrow,/XInputControllerWindows/leftStick/up,/XInputControllerWindows1/leftStick/up,/XInputControllerWindows/leftStick/down,/XInputControllerWindows1/leftStick/down,/XInputControllerWindows/leftStick/left,/XInputControllerWindows1/leftStick/left,/XInputControllerWindows/leftStick/right,/XInputControllerWindows1/leftStick/right,/XInputControllerWindows/dpad/up,/XInputControllerWindows1/dpad/up,/XInputControllerWindows/dpad/down,/XInputControllerWindows1/dpad/down,/XInputControllerWindows/dpad/left,/XInputControllerWindows1/dpad/left,/XInputControllerWindows/dpad/right,/XInputControllerWindows1/dpad/right]'
+  - m_PersistentCalls:
+      m_Calls: []
+    m_ActionId: ac09b72c-eb12-4b61-b784-e30e03e7f343
+    m_ActionName: 'UI/Submit[/Keyboard/space,/Keyboard/enter,/XInputControllerWindows/buttonSouth,/XInputControllerWindows1/buttonSouth]'
+  - m_PersistentCalls:
+      m_Calls: []
+    m_ActionId: a3492ba4-646e-48b0-bd71-c6ce22b3d48d
+    m_ActionName: 'UI/Cancel[/Keyboard/escape,/XInputControllerWindows/select,/XInputControllerWindows1/select]'
+  - m_PersistentCalls:
+      m_Calls: []
+    m_ActionId: 1b9046ed-cf98-401c-97e8-ebee9af0e077
+    m_ActionName: 'UI/Point[/Mouse/position]'
+  - m_PersistentCalls:
+      m_Calls: []
+    m_ActionId: b60a0cc9-8c9f-4181-accd-042d904b0e97
+    m_ActionName: 'UI/Click[/Mouse/leftButton]'
+  - m_PersistentCalls:
+      m_Calls: []
+    m_ActionId: 133641b1-ed78-4eac-bd9e-154a7a212558
+    m_ActionName: 'UI/Scroll[/Mouse/scroll]'
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: 
   m_DefaultActionMap: Gameplay
@@ -662,6 +686,7 @@ MonoBehaviour:
   moveSpeed: 50
   maxMoveSpeed: 10
   stopFriction: 5
+  absoluteMaxSpeed: 25
 --- !u!114 &1921787417048669159
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -676,7 +701,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   gameConfig: {fileID: 11400000, guid: 210d8aefcfed6034f995e9c385f2bf34, type: 2}
-  dashForce: 50
+  dashForce: 200
   dashCooldown: 2
 --- !u!114 &667595121421069438
 MonoBehaviour:
@@ -719,10 +744,6 @@ MonoBehaviour:
   respawnTime: 1
   maxDurability: 3
   maxLives: 3
-  NetLives:
-    m_InternalValue: 3
-  NetDurability:
-    m_InternalValue: 3
   ballRenderer: {fileID: 6215516505620654520}
   myCollider: {fileID: 658300708938450429}
   nameCanvas: {fileID: 1257973565547496989}
@@ -736,6 +757,10 @@ MonoBehaviour:
   - {fileID: 5930023304895248040, guid: 127345dd9fd66224082a29a7cd12feb9, type: 3}
   - {fileID: -4982395184782996478, guid: 127345dd9fd66224082a29a7cd12feb9, type: 3}
   - {fileID: -7190036363608124245, guid: 127345dd9fd66224082a29a7cd12feb9, type: 3}
+  NetLives:
+    m_InternalValue: 3
+  NetDurability:
+    m_InternalValue: 3
 --- !u!114 &1464737433720334616
 MonoBehaviour:
   m_ObjectHideFlags: 0
