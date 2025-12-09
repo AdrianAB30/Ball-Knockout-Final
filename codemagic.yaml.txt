@@ -1,0 +1,51 @@
+workflows:
+  unity_ios:
+    name: Unity iOS Build
+    environment:
+      vars:
+        UNITY_VERSION: "6000.0.58f1"
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Activate Unity License
+        script: |
+          echo "Activating Unity License"
+      - name: Build iOS Player
+        script: |
+          /Applications/Unity/Hub/Editor/$UNITY_VERSION/Unity.app/Contents/MacOS/Unity \
+            -batchmode \
+            -quit \
+            -projectPath . \
+            -buildTarget iOS \
+            -executeMethod BuildScript.BuildIOS
+    artifacts:
+      - build/ios/**
+    publishing:
+      email:
+        recipients:
+          - "tu_correo@gmail.com"
+
+  unity_android:
+    name: Unity Android Build
+    environment:
+      vars:
+        UNITY_VERSION: "6000.0.58f1"
+      java: 17
+    scripts:
+      - name: Activate Unity License
+        script: |
+          echo "Activating Unity License"
+      - name: Build Android AAB
+        script: |
+          /Applications/Unity/Hub/Editor/$UNITY_VERSION/Unity.app/Contents/MacOS/Unity \
+            -batchmode \
+            -quit \
+            -projectPath . \
+            -buildTarget Android \
+            -executeMethod BuildScript.BuildAndroid
+    artifacts:
+      - build/android/**
+    publishing:
+      email:
+        recipients:
+          - "tu_correo@gmail.com"
