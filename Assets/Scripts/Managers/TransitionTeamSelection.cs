@@ -8,6 +8,16 @@ public class TransitionTeamSelection : MonoBehaviour
     [SerializeField] private GameConfigurationSO gameConfig;
     [SerializeField] private string gameSceneName = "TeamSelectionScene";
 
+    [Header("Data Storage")]
+    [SerializeField] private LocalMatchConfigurationSO localMatchData;
+
+    private void Start()
+    {
+        if (localMatchData != null)
+        {
+            localMatchData.ResetData(); 
+        }
+    }
     public void StartLocalMatch()
     {
         gameConfig.SetLocalMode();

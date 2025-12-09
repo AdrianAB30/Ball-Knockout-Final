@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using TMPro;
 using System.Threading.Tasks;
 using System;
@@ -74,7 +74,7 @@ public class GameManager : PersistentSingleton<GameManager>
 
         if (AuthenticationService.Instance.IsSignedIn)
         {
-            Debug.Log("GameManager: Sesi�n restaurada autom�ticamente.");
+            Debug.Log("GameManager: Sesión restaurada automáticamente.");
             bool wasGuest = PlayerPrefs.GetString("LastLoginType") == "Guest";
             if (wasGuest) HandleLoginSuccess_Guest(AuthenticationService.Instance.PlayerInfo);
             else HandleLoginSuccess_Unity(AuthenticationService.Instance.PlayerInfo);
@@ -252,6 +252,21 @@ public class GameManager : PersistentSingleton<GameManager>
         if (isOpening)
         {
             if (AudioManager.Instance) AudioManager.Instance.PlayPanelOpen();
+
+            // 🔥 Cerrar settings panel si está abierto
+            if (settingsPanel.activeSelf)
+            {
+                JuicyPanel juicySettings = settingsPanel.GetComponent<JuicyPanel>();
+                if (juicySettings != null)
+                {
+                    juicySettings.ClosePanel();
+                }
+                else
+                {
+                    settingsPanel.SetActive(false);
+                }
+            }
+
             panel.SetActive(true);
         }
         else
@@ -267,6 +282,8 @@ public class GameManager : PersistentSingleton<GameManager>
             {
                 panel.SetActive(false);
             }
+
+            settingsPanel.SetActive(true);
         }
     }
     public void ToggleSchemaGamepad()

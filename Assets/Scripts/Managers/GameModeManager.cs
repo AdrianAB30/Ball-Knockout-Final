@@ -59,6 +59,8 @@ public class GameModeManager : NetworkBehaviour
 
     private IEnumerator StartRoundSequence()
     {
+        yield return new WaitForSeconds(0.5f);
+
         if (gameConfig.CurrentGameMode == GameModeType.OnlineMultiplayer)
         {
             SetMovementClientRpc(false);
@@ -99,9 +101,11 @@ public class GameModeManager : NetworkBehaviour
 
         if (gameConfig.CurrentGameMode == GameModeType.OnlineMultiplayer) PlaySoundClientRpc("go_music");
 
+        yield return new WaitForSeconds(0.1f); 
+
         if (gameConfig.CurrentGameMode == GameModeType.OnlineMultiplayer)
         {
-            SetMovementClientRpc(true);
+            SetMovementClientRpc(true); 
         }
         else
         {

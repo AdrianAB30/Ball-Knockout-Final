@@ -1,6 +1,7 @@
 using UnityEngine;
 using Unity.Netcode;
-using UnityEngine.InputSystem; 
+using UnityEngine.InputSystem;
+using System.Collections.Generic;
 
 public class GameSetupManager : MonoBehaviour
 {
@@ -61,6 +62,13 @@ public class GameSetupManager : MonoBehaviour
         if (NetworkManager.Singleton.IsServer)
         {
             SpawnOnlinePlayer(NetworkManager.Singleton.LocalClientId);
+
+            foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
+            {
+                if (clientId == NetworkManager.Singleton.LocalClientId) continue;
+
+                SpawnOnlinePlayer(clientId);
+            }
         }
     }
 
@@ -102,12 +110,39 @@ public class GameSetupManager : MonoBehaviour
 
         if (NetworkManager.Singleton != null) NetworkManager.Singleton.Shutdown();
 
+        var existingPlayers = FindObjectsByType<PlayerInput>(FindObjectsSortMode.None);
+        foreach (var p in existingPlayers) Destroy(p.gameObject);
+
         if (localMatchData != null)
         {
+            Debug.Log($"[GameSetupManager] La lista tiene {localMatchData.Players.Count} elementos.");
+
+            HashSet<InputDevice> processedDevices = new HashSet<InputDevice>(); 
+            int spawnedCount = 0; 
+
             foreach (var playerData in localMatchData.Players)
             {
+                if (spawnedCount >= 2)
+                {
+                    Debug.LogWarning("Se intentó spawnear más de 2 jugadores. Ignorando el resto.");
+                    break;
+                }
+
+                if (processedDevices.Contains(playerData.Device))
+                {
+                    Debug.LogWarning($"Dispositivo duplicado detectado ({playerData.Device}), ignorando.");
+                    continue;
+                }
+
                 SpawnLocalPlayer(playerData);
+
+                processedDevices.Add(playerData.Device);
+                spawnedCount++;
             }
+        }
+        else
+        {
+            Debug.LogError("No has asignado el LocalMatchConfigurationSO");
         }
     }
 

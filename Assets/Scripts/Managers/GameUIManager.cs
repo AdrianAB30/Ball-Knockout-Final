@@ -2,27 +2,19 @@ using UnityEngine;
 using TMPro;
 using DG.Tweening;
 using UnityEngine.UI;
+using System.Collections;
 
 public class GameUIManager : MonoBehaviour
 {
     [Header("Referencias UI")]
     [SerializeField] private TextMeshProUGUI countdownText;
-    [SerializeField] private GameObject p1HeartContainer;
-    [SerializeField] private GameObject p2HeartContainer;
 
     [Header("Configuración")]
     [SerializeField] private GameConfigurationSO gameConfig;
 
     [SerializeField] private Image[] p1Hearts;
     [SerializeField] private Image[] p2Hearts;
-    private Vector3 _leftPanelPos;
-    private Vector3 _rightPanelPos;
 
-    private void Awake()
-    {
-        if (p1HeartContainer) _leftPanelPos = p1HeartContainer.transform.position;
-        if (p2HeartContainer) _rightPanelPos = p2HeartContainer.transform.position;
-    }
     private void OnEnable()
     {
         Health.OnLivesChanged += UpdateLives;
@@ -38,15 +30,9 @@ public class GameUIManager : MonoBehaviour
             GameModeManager.Instance.OnCountdownStart += ShowCountdown;
             GameModeManager.Instance.OnRoundStart += ShowGo;
         }
-
-        Health.OnLivesChanged += UpdateLives;
-
-        Invoke(nameof(AdjustUILayout), 0.5f);
-
-        UpdateLives(1, 3);
-        UpdateLives(2, 3);
-
         countdownText.gameObject.SetActive(false);
+
+        StartCoroutine(LateStartUI());
     }
 
     private void OnDestroy()
@@ -56,7 +42,6 @@ public class GameUIManager : MonoBehaviour
             GameModeManager.Instance.OnCountdownStart -= ShowCountdown;
             GameModeManager.Instance.OnRoundStart -= ShowGo;
         }
-
     }
 
     private void ShowCountdown(int number)
@@ -87,12 +72,11 @@ public class GameUIManager : MonoBehaviour
         var allPlayers = FindObjectsByType<Health>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 
         int teamId = -1;
-
         foreach (var h in allPlayers)
         {
             if (h.PlayerID == playerIndex)
             {
-                teamId = h.TeamID; 
+                teamId = h.TeamID;
                 break;
             }
         }
@@ -106,28 +90,22 @@ public class GameUIManager : MonoBehaviour
             hearts[i].color = (i < currentLives) ? Color.white : Color.black;
         }
     }
-    private void AdjustUILayout()
+  
+    private IEnumerator LateStartUI()
     {
-        int localTeamId = 1; 
+        yield return new WaitForSeconds(0.5f);
 
-        var players = FindObjectsByType<PlayerVisuals>(FindObjectsSortMode.None);
+        UpdateLives(1, 3);
+        UpdateLives(2, 3);
+    }
+    private void RefreshAllLives()
+    {
+        var players = FindObjectsByType<Health>(FindObjectsSortMode.None);
         foreach (var p in players)
         {
-            if (gameConfig.CurrentGameMode == GameModeType.OnlineMultiplayer && p.IsOwner)
-            {
-                localTeamId = p.NetTeamId.Value;
-                break;
-            }
-            if (gameConfig.CurrentGameMode == GameModeType.LocalSplitScreen && p.PlayerID == 1)
-            {
-                return;
-            }
-        }
-
-        if (localTeamId == 2)
-        {
-            p1HeartContainer.transform.position = _rightPanelPos;
-            p2HeartContainer.transform.position = _leftPanelPos;
+            // Pedimos al script Health que nos diga cuántas vidas tiene realmente
+            // Necesitas exponer una propiedad pública en Health para leer 'NetLives.Value'
+            // O simplemente confiamos en el UpdateLives(1, 3) por ahora.
         }
     }
 }

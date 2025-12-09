@@ -286,8 +286,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   countdownText: {fileID: 520532703}
-  p1HeartContainer: {fileID: 1704118555}
-  p2HeartContainer: {fileID: 1441546067}
   gameConfig: {fileID: 11400000, guid: 210d8aefcfed6034f995e9c385f2bf34, type: 2}
   p1Hearts:
   - {fileID: 1019908200}
@@ -465,7 +463,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 20}
   m_SizeDelta: {x: 1290.36, y: 153.99}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &520532703
@@ -664,8 +662,7 @@ MonoBehaviour:
     PlayerPrefab: {fileID: 0}
     Prefabs:
       NetworkPrefabsLists:
-      - {fileID: 11400000, guid: 91cccfe125dc8b147901f98dd9f632f1, type: 2}
-      - {fileID: 0}
+      - {fileID: 11400000, guid: 81826f3d90e97e24a8d6b20155f86fc0, type: 2}
     TickRate: 30
     ClientConnectionBufferTimeout: 10
     ConnectionApproval: 0

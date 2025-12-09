@@ -81,11 +81,8 @@ public class PlayerInputHandler : NetworkBehaviour
     {
         if (!ValidateInput()) return;
 
-        if (CurrentScheme == "Gamepad" || CurrentScheme == "KeyboardLeft" || CurrentScheme == "KeyboardRight")
-        {
-            MoveDirection = context.ReadValue<Vector2>();
-            OnMoveInput?.Invoke(MoveDirection);
-        }
+        MoveDirection = context.ReadValue<Vector2>();
+        OnMoveInput?.Invoke(MoveDirection);
     }
 
     public void OnDashInput(InputAction.CallbackContext context)

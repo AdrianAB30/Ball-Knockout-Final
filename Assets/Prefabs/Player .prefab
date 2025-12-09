@@ -686,7 +686,7 @@ MonoBehaviour:
   moveSpeed: 50
   maxMoveSpeed: 10
   stopFriction: 5
-  absoluteMaxSpeed: 25
+  absoluteMaxSpeed: 100
 --- !u!114 &1921787417048669159
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -701,7 +701,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   gameConfig: {fileID: 11400000, guid: 210d8aefcfed6034f995e9c385f2bf34, type: 2}
-  dashForce: 200
+  dashForce: 60
   dashCooldown: 2
 --- !u!114 &667595121421069438
 MonoBehaviour:
@@ -789,6 +789,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spriteTransform: {fileID: 8587966887768387216}
-  stretchAmount: 2
+  stretchAmount: 1.5
   squashAmount: 0.5
   duration: 0.1
