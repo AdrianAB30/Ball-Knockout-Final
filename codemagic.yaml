@@ -3,7 +3,7 @@ workflows:
     name: Unity iOS Build
     environment:
       vars:
-        UNITY_VERSION: "6000.0.58f1"
+        UNITY_VERSION: "2022.3.7f1"
       xcode: latest
       cocoapods: default
     scripts:
