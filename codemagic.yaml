@@ -12,7 +12,7 @@ workflows:
           echo "Activating Unity License"
       - name: Build iOS Player
         script: |
-          /Applications/Unity/Hub/Editor/$UNITY_VERSION/Unity.app/Contents/MacOS/Unity \
+          /Applications/Unity/Unity.app/Contents/MacOS/Unity \
             -batchmode \
             -quit \
             -projectPath . \
