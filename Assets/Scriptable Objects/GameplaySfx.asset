@@ -14,6 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ballBounce: []
   ballHitPlayer: []
-  dashSounds: []
+  dashSounds:
+  - {fileID: 8300000, guid: 224d8412d9f718348b68a3b47134f9cb, type: 3}
+  - {fileID: 8300000, guid: 6e12ba6e5a87e6842b47ce5a97285df0, type: 3}
+  - {fileID: 8300000, guid: 8d04fd7a6be31aa45916245b7e699050, type: 3}
   scorePoint: {fileID: 0}
   matchEnd: {fileID: 0}

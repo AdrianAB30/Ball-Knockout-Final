@@ -11,14 +11,22 @@ public class CollisionDamage : NetworkBehaviour
     private float _hitCooldown = 0.5f;
     private DashController _myDash;
 
+    private FeelManager _feelManager;
+
     private void Awake()
     {
         _myDash = GetComponent<DashController>();
         if (_myDash == null)
         {
-            Debug.LogError("CollisionDamage: ¡Falta el componente DashController en este objeto!");
+            Debug.LogError("CollisionDamage: ¡Falta el componente DashController!");
         }
     }
+
+    private void Start()
+    {
+        _feelManager = FindFirstObjectByType<FeelManager>();
+    }
+
     private void OnCollisionEnter2D(Collision2D collision)
     {
         if (gameConfig.CurrentGameMode == GameModeType.OnlineMultiplayer && !IsServer) return;
@@ -35,7 +43,6 @@ public class CollisionDamage : NetworkBehaviour
             if (_myDash.IsDashing)
             {
                 GetComponent<PlayerInputHandler>().TriggerImpactVibration();
-
                 ApplyDamage(enemyHealth, 999f);
                 return;
             }
@@ -56,6 +63,12 @@ public class CollisionDamage : NetworkBehaviour
         }
     }
 
+    [ClientRpc]
+    private void TriggerShakeClientRpc()
+    {
+        if (_feelManager != null) _feelManager.StartShake();
+    }
+
     private void ApplyDamage(Health enemy, float force)
     {
         _lastHitTime = Time.time;
@@ -66,7 +79,18 @@ public class CollisionDamage : NetworkBehaviour
         {
             enemyInput.TriggerImpactVibration();
         }
-
+        TriggerScreenShake();
         enemy.TakeDamage();
+    }
+    private void TriggerScreenShake()
+    {
+        if (gameConfig.CurrentGameMode == GameModeType.OnlineMultiplayer)
+        {
+            TriggerShakeClientRpc();
+        }
+        else
+        {
+            if (_feelManager != null) _feelManager.StartShake();
+        }
     }
 }

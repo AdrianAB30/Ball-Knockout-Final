@@ -776,7 +776,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   gameConfig: {fileID: 11400000, guid: 210d8aefcfed6034f995e9c385f2bf34, type: 2}
-  minDamageVelocity: 15
+  minDamageVelocity: 50
 --- !u!114 &579748898709668932
 MonoBehaviour:
   m_ObjectHideFlags: 0

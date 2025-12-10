@@ -51,9 +51,18 @@ public class GameModeManager : NetworkBehaviour
     {
         yield return new WaitForSeconds(timeToRespawn);
 
-        ReviveAllPlayers();
         ResetPlayerPositions();
 
+        ReviveAllPlayers();
+
+        if (gameConfig.CurrentGameMode == GameModeType.OnlineMultiplayer)
+        {
+            SetMovementClientRpc(false);
+        }
+        else
+        {
+            SetPlayersMovement(false);
+        }
         yield return StartCoroutine(StartRoundSequence());
     }
 

@@ -20,6 +20,7 @@ public class DashController : NetworkBehaviour
     private bool _isDead = true;
     public bool IsDead => _isDead;
     public bool IsDashing { get; private set; } = false;
+
     private void Awake()
     {
         _rb = GetComponent<Rigidbody2D>();
@@ -51,15 +52,20 @@ public class DashController : NetworkBehaviour
 
         if (gameConfig != null && gameConfig.CurrentGameMode == GameModeType.OnlineMultiplayer && !IsOwner) return;
 
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayDash();
+        }
+
         if (gameConfig != null && gameConfig.CurrentGameMode == GameModeType.OnlineMultiplayer)
         {
-            RequestDashServerRpc(direction); 
+            RequestDashServerRpc(direction);
 
             if (_visuals != null) _visuals.TriggerSquashAndStretch(direction);
         }
         else
         {
-            ApplyDashForce(direction); 
+            ApplyDashForce(direction);
             if (_visuals != null) _visuals.TriggerSquashAndStretch(direction);
         }
 
@@ -70,7 +76,6 @@ public class DashController : NetworkBehaviour
     private void RequestDashServerRpc(Vector2 direction)
     {
         ApplyDashForce(direction);
-
         PlayDashVisualsClientRpc(direction);
     }
 
@@ -80,6 +85,11 @@ public class DashController : NetworkBehaviour
         if (IsOwner) return;
 
         if (_isDead) return;
+
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayDash();
+        }
 
         if (_visuals != null)
         {
@@ -102,14 +112,15 @@ public class DashController : NetworkBehaviour
     private IEnumerator DashCooldownCoroutine()
     {
         _canDash = false;
-        IsDashing = true; 
+        IsDashing = true;
 
         yield return new WaitForSeconds(0.3f);
-        IsDashing = false; 
+        IsDashing = false;
 
         yield return new WaitForSeconds(dashCooldown - 0.3f);
         _canDash = true;
     }
+
     public void SetDead(bool state)
     {
         _isDead = state;
