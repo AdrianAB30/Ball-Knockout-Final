@@ -255,7 +255,6 @@ public class VivoxManager : PersistentSingleton<VivoxManager>
         OnVivoxInitialized?.Invoke();
     }
 
-
     public void SetMicVolume(int volumeDb)
     {
         VivoxService.Instance.SetInputDeviceVolume(volumeDb);
@@ -306,7 +305,6 @@ public class VivoxManager : PersistentSingleton<VivoxManager>
             }
             else
             {
-                // Debug.LogWarning($"No se encontró al participante con Nombre: {displayName} (ID: {unityPlayerId}) en el canal de Vivox (todavía).");
             }
         }
         catch (Exception ex)

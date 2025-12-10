@@ -88,9 +88,6 @@ public class UIAnimationData : ScriptableObject
             .OnComplete(() =>
             {
                 onComplete?.Invoke();
-
-                // Opcional: Restaurar escala para la próxima vez (aunque el Open ya lo maneja)
-                // panel.transform.localScale = Vector3.one; 
             });
     }
 }

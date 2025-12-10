@@ -16,12 +16,6 @@ public class JuicyButton : MonoBehaviour, IPointerDownHandler, IPointerEnterHand
         originalScale = transform.localScale;
     }
 
-    private void Start()
-    {
-        if (uiAnimations == null) uiAnimations = Resources.Load<UIAnimationData>("UI/GlobalUIStyle");
-    }
-
-
     public void OnPointerDown(PointerEventData eventData)
     {
         if (NotInteractable()) return;
