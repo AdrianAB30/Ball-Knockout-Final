@@ -9,14 +9,14 @@ public class MovementController : NetworkBehaviour
     [Header("Configuración")]
     [SerializeField] private GameConfigurationSO gameConfig;
     [SerializeField] private float moveSpeed = 50f;
-    [SerializeField] private float maxMoveSpeed = 8f;
-    [SerializeField] private float stopFriction = 5f;
     [SerializeField] private float absoluteMaxSpeed = 25f;
 
     private Rigidbody2D _rb;
     private PlayerInputHandler _input;
     private bool _isDashing = false;
     private bool _isDead = true;
+
+    private Vector2 _networkInputDirection;
 
     private void Awake()
     {
@@ -36,11 +36,36 @@ public class MovementController : NetworkBehaviour
         _isDashing = false;
     }
 
+    private void Update()
+    {
+        if (IsOwner)
+        {
+            if (_input != null)
+                _networkInputDirection = _input.MoveDirection;
+        }
+    }
+
     private void FixedUpdate()
     {
-        if (gameConfig != null && gameConfig.CurrentGameMode == GameModeType.OnlineMultiplayer && !IsOwner) return;
+        if (_isDashing || _isDead) return;
 
-        HandleMovement();
+        if (gameConfig != null && gameConfig.CurrentGameMode == GameModeType.OnlineMultiplayer)
+        {
+
+            if (IsOwner)
+            {
+                SubmitInputServerRpc(_networkInputDirection);
+            }
+
+            if (IsServer)
+            {
+
+            }
+        }
+        else
+        {
+            ApplyPhysics(_input.MoveDirection);
+        }
 
         if (_rb.linearVelocity.magnitude > absoluteMaxSpeed)
         {
@@ -48,39 +73,50 @@ public class MovementController : NetworkBehaviour
         }
     }
 
-    private void HandleMovement()
+    [ServerRpc]
+    private void SubmitInputServerRpc(Vector2 inputDirection)
     {
-        if (_isDashing || _isDead) return;
+        ApplyPhysics(inputDirection);
+    }
 
-        Vector2 moveDir = _input.MoveDirection;
-
+    private void ApplyPhysics(Vector2 moveDir)
+    {
         if (moveDir.magnitude > 0.01f)
         {
             Vector2 targetVelocity = moveDir * moveSpeed;
-
             _rb.linearVelocity = Vector2.Lerp(_rb.linearVelocity, targetVelocity, Time.fixedDeltaTime * 15f);
         }
         else
         {
-            _rb.linearVelocity = Vector2.Lerp(_rb.linearVelocity, Vector2.zero, Time.fixedDeltaTime * 20f);
+
+            if (_rb.linearVelocity.magnitude > moveSpeed)
+            {
+                _rb.linearVelocity = Vector2.Lerp(_rb.linearVelocity, Vector2.zero, Time.fixedDeltaTime * 0.5f);
+            }
+            else
+            {
+                _rb.linearVelocity = Vector2.Lerp(_rb.linearVelocity, Vector2.zero, Time.fixedDeltaTime * 20f);
+            }
         }
     }
     public void SetDead(bool state)
     {
         _isDead = state;
-        if (_isDead)
+        if (_isDead && _rb != null)
         {
-            _rb.linearVelocity = Vector2.zero; 
+            _rb.linearVelocity = Vector2.zero;
             _rb.angularVelocity = 0f;
         }
     }
+
     public void TeleportTo(Vector3 position, Quaternion rotation)
     {
-        _rb.linearVelocity = Vector2.zero; 
-        _rb.angularVelocity = 0f;
-
+        if (_rb != null)
+        {
+            _rb.linearVelocity = Vector2.zero;
+            _rb.angularVelocity = 0f;
+        }
         transform.position = position;
         transform.rotation = rotation;
-
     }
 }

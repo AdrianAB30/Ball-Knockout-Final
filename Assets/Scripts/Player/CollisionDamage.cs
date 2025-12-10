@@ -22,29 +22,25 @@ public class CollisionDamage : NetworkBehaviour
     private void OnCollisionEnter2D(Collision2D collision)
     {
         if (gameConfig.CurrentGameMode == GameModeType.OnlineMultiplayer && !IsServer) return;
-
         if (Time.time < _lastHitTime + _hitCooldown) return;
 
         if (collision.gameObject.CompareTag("Player"))
         {
             var enemyDash = collision.gameObject.GetComponent<DashController>();
             var enemyHealth = collision.gameObject.GetComponent<Health>();
-
             if (enemyHealth == null) return;
 
-            if (enemyDash != null && enemyDash.IsDashing && !_myDash.IsDashing)
-            {
-                return;
-            }
+            if (enemyDash != null && enemyDash.IsDashing && !_myDash.IsDashing) return;
 
             if (_myDash.IsDashing)
             {
-                ApplyDamage(enemyHealth, 999f); 
+                GetComponent<PlayerInputHandler>().TriggerImpactVibration();
+
+                ApplyDamage(enemyHealth, 999f);
                 return;
             }
 
             float impactVelocity = collision.relativeVelocity.magnitude;
-
             if (impactVelocity > minDamageVelocity)
             {
                 Rigidbody2D myRb = GetComponent<Rigidbody2D>();
@@ -52,16 +48,25 @@ public class CollisionDamage : NetworkBehaviour
 
                 if (myRb.linearVelocity.magnitude > otherRb.linearVelocity.magnitude)
                 {
+                    GetComponent<PlayerInputHandler>().TriggerImpactVibration();
+
                     ApplyDamage(enemyHealth, impactVelocity);
                 }
             }
         }
     }
+
     private void ApplyDamage(Health enemy, float force)
     {
         _lastHitTime = Time.time;
         Debug.Log($"GOLPE EXITOSO! Fuerza: {force}");
-        enemy.TakeDamage();
 
+        var enemyInput = enemy.GetComponent<PlayerInputHandler>();
+        if (enemyInput != null)
+        {
+            enemyInput.TriggerImpactVibration();
+        }
+
+        enemy.TakeDamage();
     }
 }

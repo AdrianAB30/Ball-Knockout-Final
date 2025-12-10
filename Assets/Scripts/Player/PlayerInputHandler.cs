@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 using System;
+using System.Collections;
 
 public class PlayerInputHandler : NetworkBehaviour
 {
@@ -148,7 +149,9 @@ public class PlayerInputHandler : NetworkBehaviour
                 if (distanceToBall > interactionRadius) return;
 
                 _touchStartPosition = currentTouchPos;
-                _lastTouchPos = currentTouchPos; 
+                _lastTouchPos = currentTouchPos;
+                _currentTouchVelocity = Vector2.zero; 
+                _touchStartTime = Time.time;
                 _isTouching = true;
                 PointerPosition = currentTouchPos;
             }
@@ -157,12 +160,13 @@ public class PlayerInputHandler : NetworkBehaviour
                 PointerPosition = currentTouchPos;
 
                 Vector2 deltaMove = currentTouchPos - _lastTouchPos;
-                _currentTouchVelocity = deltaMove / Time.deltaTime;
+
+                Vector2 instantVelocity = deltaMove / Time.deltaTime;
+                _currentTouchVelocity = Vector2.Lerp(_currentTouchVelocity, instantVelocity, 0.5f);
 
                 _lastTouchPos = currentTouchPos;
 
                 Vector2 directionToFinger = currentTouchPos - ballScreenPos;
-
                 if (directionToFinger.magnitude > minMoveDistance)
                 {
                     MoveDirection = directionToFinger.normalized;
@@ -184,15 +188,54 @@ public class PlayerInputHandler : NetworkBehaviour
 
             float fingerSpeed = _currentTouchVelocity.magnitude;
 
-            if (fingerSpeed > minDashVelocity)
+            float totalSwipeDistance = Vector2.Distance(currentTouchPos, _touchStartPosition);
+
+            if (fingerSpeed > minDashVelocity && totalSwipeDistance > minSwipeDistance)
             {
                 OnDashPressed?.Invoke(_currentTouchVelocity.normalized);
-                Debug.Log($"🚀 FLICK DASH! Velocidad: {fingerSpeed:F0} px/s");
+                Debug.Log($"🚀 FLICK DASH! Vel: {fingerSpeed:F0} | Dist: {totalSwipeDistance:F0}");
             }
         }
     }
     public Vector2 GetCurrentMoveDirection()
     {
         return MoveDirection.normalized;
+    }
+    public void TriggerImpactVibration()
+    {
+        if (Application.isMobilePlatform || Touchscreen.current != null)
+        {
+            Handheld.Vibrate();
+        }
+
+        if (_playerInput != null && _playerInput.devices.Count > 0)
+        {
+            foreach (var device in _playerInput.devices)
+            {
+                if (device is Gamepad gamepad)
+                {
+                    StartCoroutine(GamepadRumbleRoutine(gamepad));
+                }
+            }
+        }
+    }
+
+    private IEnumerator GamepadRumbleRoutine(Gamepad pad)
+    {
+
+        pad.SetMotorSpeeds(0.5f, 0.8f);
+
+        yield return new WaitForSeconds(0.2f);
+
+        pad.SetMotorSpeeds(0f, 0f);
+    }
+
+    private void OnDisable()
+    {
+        if (_playerInput == null) return;
+        foreach (var device in _playerInput.devices)
+        {
+            if (device is Gamepad gamepad) gamepad.ResetHaptics();
+        }
     }
 }

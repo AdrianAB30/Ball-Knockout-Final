@@ -420,7 +420,7 @@ MonoBehaviour:
   RotationMaxInterpolationTime: 0.1
   ScaleLerpSmoothing: 1
   ScaleMaxInterpolationTime: 0.1
-  AuthorityMode: 1
+  AuthorityMode: 0
   TickSyncChildren: 0
   UseUnreliableDeltas: 0
   SyncPositionX: 1
@@ -687,8 +687,6 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   gameConfig: {fileID: 11400000, guid: 210d8aefcfed6034f995e9c385f2bf34, type: 2}
   moveSpeed: 20
-  maxMoveSpeed: 30
-  stopFriction: 5
   absoluteMaxSpeed: 100
 --- !u!114 &1921787417048669159
 MonoBehaviour:
@@ -704,7 +702,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   gameConfig: {fileID: 11400000, guid: 210d8aefcfed6034f995e9c385f2bf34, type: 2}
-  dashForce: 200
+  dashForce: 80
   dashCooldown: 2
 --- !u!114 &667595121421069438
 MonoBehaviour:
