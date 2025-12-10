@@ -21,8 +21,19 @@ public class PlayerInputHandler : NetworkBehaviour
     [Tooltip("Zona muerta: Mínimo movimiento del dedo para empezar a caminar.")]
     [SerializeField] private float minMoveDistance = 10f;
 
+    [Header("Ajustes Joystick Virtual")]
+    [Tooltip("Cuánto debes arrastrar el dedo para alcanzar la velocidad máxima.")]
+    [SerializeField] private float joystickRadius = 100f;
+
+    [Tooltip("Distancia máxima en píxeles desde la pelota para que el toque sea válido.")]
+    [SerializeField] private float interactionRadius = 200f;
+
+    [Tooltip("Qué tan rápido debes mover el dedo (píxeles/seg) al soltar para que cuente como Dash.")]
+    [SerializeField] private float minDashVelocity = 1000f;
+
     private PlayerInput _playerInput;
     private Rigidbody2D _rb;
+    private Camera _mainCamera; 
 
     public Vector2 MoveDirection { get; private set; }
     public Vector2 PointerPosition { get; private set; }
@@ -32,11 +43,14 @@ public class PlayerInputHandler : NetworkBehaviour
     private Vector2 _touchStartPosition;
     private float _touchStartTime;
     private bool _isTouching = false;
+    private Vector2 _lastTouchPos;
+    private Vector2 _currentTouchVelocity;
 
     private void Awake()
     {
         _playerInput = GetComponent<PlayerInput>();
         _rb = GetComponent<Rigidbody2D>();
+        _mainCamera = Camera.main; // Cacheamos la cámara
     }
 
     public override void OnNetworkSpawn()
@@ -59,7 +73,9 @@ public class PlayerInputHandler : NetworkBehaviour
     {
         if (!ValidateInput()) return;
 
-        if (CurrentScheme == "Touch")
+        if (_mainCamera == null) _mainCamera = Camera.main;
+
+        if (Touchscreen.current != null)
         {
             HandleTouchInput();
         }
@@ -120,6 +136,7 @@ public class PlayerInputHandler : NetworkBehaviour
 
         var touch = Touchscreen.current.primaryTouch;
         Vector2 currentTouchPos = touch.position.ReadValue();
+        Vector2 ballScreenPos = _mainCamera.WorldToScreenPoint(transform.position);
 
         if (touch.press.isPressed)
         {
@@ -127,19 +144,28 @@ public class PlayerInputHandler : NetworkBehaviour
 
             if (!_isTouching)
             {
+                float distanceToBall = Vector2.Distance(currentTouchPos, ballScreenPos);
+                if (distanceToBall > interactionRadius) return;
+
                 _touchStartPosition = currentTouchPos;
-                _touchStartTime = Time.time;
+                _lastTouchPos = currentTouchPos; 
                 _isTouching = true;
                 PointerPosition = currentTouchPos;
             }
             else
             {
                 PointerPosition = currentTouchPos;
-                Vector2 moveVector = currentTouchPos - _touchStartPosition;
 
-                if (moveVector.magnitude > minMoveDistance)
+                Vector2 deltaMove = currentTouchPos - _lastTouchPos;
+                _currentTouchVelocity = deltaMove / Time.deltaTime;
+
+                _lastTouchPos = currentTouchPos;
+
+                Vector2 directionToFinger = currentTouchPos - ballScreenPos;
+
+                if (directionToFinger.magnitude > minMoveDistance)
                 {
-                    MoveDirection = moveVector.normalized;
+                    MoveDirection = directionToFinger.normalized;
                     OnMoveInput?.Invoke(MoveDirection);
                 }
                 else
@@ -153,21 +179,18 @@ public class PlayerInputHandler : NetworkBehaviour
         {
             IsPressing = false;
             _isTouching = false;
-
             MoveDirection = Vector2.zero;
             OnMoveInput?.Invoke(Vector2.zero);
 
-            float timeElapsed = Time.time - _touchStartTime;
-            Vector2 swipeVector = currentTouchPos - _touchStartPosition;
+            float fingerSpeed = _currentTouchVelocity.magnitude;
 
-            if (swipeVector.magnitude > minSwipeDistance && timeElapsed <= maxDashTime)
+            if (fingerSpeed > minDashVelocity)
             {
-                OnDashPressed?.Invoke(swipeVector.normalized);
-                Debug.Log($"🔥 SWIPE DASH! Distancia: {swipeVector.magnitude:F1}px, Tiempo: {timeElapsed:F2}s");
+                OnDashPressed?.Invoke(_currentTouchVelocity.normalized);
+                Debug.Log($"🚀 FLICK DASH! Velocidad: {fingerSpeed:F0} px/s");
             }
         }
     }
-
     public Vector2 GetCurrentMoveDirection()
     {
         return MoveDirection.normalized;

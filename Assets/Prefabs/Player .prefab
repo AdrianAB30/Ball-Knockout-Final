@@ -424,7 +424,7 @@ MonoBehaviour:
   TickSyncChildren: 0
   UseUnreliableDeltas: 0
   SyncPositionX: 1
-  SyncPositionY: 1
+  SyncPositionY: 0
   SyncPositionZ: 1
   SyncRotAngleX: 1
   SyncRotAngleY: 1
@@ -668,7 +668,10 @@ MonoBehaviour:
   gameConfig: {fileID: 11400000, guid: 210d8aefcfed6034f995e9c385f2bf34, type: 2}
   minSwipeDistance: 50
   maxDashTime: 0.3
-  minMoveDistance: 10
+  minMoveDistance: 20
+  joystickRadius: 120
+  interactionRadius: 200
+  minDashVelocity: 1200
 --- !u!114 &615357526894517825
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -683,8 +686,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   gameConfig: {fileID: 11400000, guid: 210d8aefcfed6034f995e9c385f2bf34, type: 2}
-  moveSpeed: 50
-  maxMoveSpeed: 10
+  moveSpeed: 20
+  maxMoveSpeed: 30
   stopFriction: 5
   absoluteMaxSpeed: 100
 --- !u!114 &1921787417048669159
@@ -701,7 +704,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   gameConfig: {fileID: 11400000, guid: 210d8aefcfed6034f995e9c385f2bf34, type: 2}
-  dashForce: 60
+  dashForce: 200
   dashCooldown: 2
 --- !u!114 &667595121421069438
 MonoBehaviour:

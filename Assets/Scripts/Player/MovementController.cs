@@ -56,23 +56,13 @@ public class MovementController : NetworkBehaviour
 
         if (moveDir.magnitude > 0.01f)
         {
-            _rb.AddForce(moveDir * moveSpeed);
+            Vector2 targetVelocity = moveDir * moveSpeed;
 
-            if (_rb.linearVelocity.magnitude > maxMoveSpeed)
-            {
-                _rb.linearVelocity = Vector2.ClampMagnitude(_rb.linearVelocity, maxMoveSpeed);
-            }
+            _rb.linearVelocity = Vector2.Lerp(_rb.linearVelocity, targetVelocity, Time.fixedDeltaTime * 15f);
         }
         else
         {
-            if (_rb.linearVelocity.magnitude > maxMoveSpeed)
-            {
-                // Dejo fluir la bola
-            }
-            else
-            {
-                _rb.linearVelocity = Vector2.Lerp(_rb.linearVelocity, Vector2.zero, stopFriction * Time.fixedDeltaTime);
-            }
+            _rb.linearVelocity = Vector2.Lerp(_rb.linearVelocity, Vector2.zero, Time.fixedDeltaTime * 20f);
         }
     }
     public void SetDead(bool state)
